@@ -101,6 +101,80 @@ for (const f of tracked) {
   for (const [label, re] of SECRET_PATTERNS) if (re.test(text)) fail(`${f}: contains something shaped like a ${label}`);
 }
 
+// 5. Architecture boundaries
+//
+// Each rule below exists because the mistake it blocks was actually made and caught in review. The error
+// text says what to do instead, so whoever (or whatever) wrote the change can fix the cause, not the symptom.
+
+// Which project modules each module may import. A new file in src/ must be added here deliberately.
+const LAYERS = {
+  'src/xml.mjs': [],
+  'src/store.mjs': [],
+  'src/llm.mjs': [],
+  'src/inventory.mjs': [],
+  'src/ingest.mjs': ['xml', 'store'],
+  'src/cluster.mjs': ['store'],
+  'src/analyze.mjs': ['store', 'llm', 'inventory'],
+  'src/eval.mjs': ['store', 'analyze', 'llm', 'ingest'],
+  'src/server.mjs': ['ingest', 'cli', 'store'],
+  'src/cli.mjs': ['ingest', 'cluster', 'analyze', 'llm', 'inventory', 'store', 'eval', 'server']
+};
+// Capabilities that are confined to one place each.
+const CONFINED = [
+  { what: 'starting a process', re: /node:child_process/, only: ['src/llm.mjs'],
+    fix: 'Model calls go through callModel() in src/llm.mjs. That is the only place the claude CLI is started, with no tools, no MCP servers and no user settings. Starting a process anywhere else bypasses that lockdown.' },
+  { what: 'a network request', re: /\bfetch\s*\(/, only: ['src/ingest.mjs', 'src/llm.mjs'],
+    fix: 'Feeds are fetched in src/ingest.mjs (so they are filtered, stored and counted in coverage) and models are called in src/llm.mjs. Add a source to config/sources.json or an engine to llm.mjs instead of fetching here.' },
+  { what: 'a file write', re: /\bfs\.(writeFile|appendFile|rename|rm|unlink|mkdir)\b/, only: ['src/store.mjs', 'src/cli.mjs', 'src/eval.mjs'],
+    fix: 'Persist through writeJsonAtomic() or the save*/merge* functions in src/store.mjs, so writes are atomic and stay inside the data folder.' },
+  { what: 'an HTTP server', re: /node:http\b/, only: ['src/server.mjs'],
+    fix: 'Add routes to src/server.mjs, where every request passes checkRequest() (Host, Origin and content-type checks).' }
+];
+const MARKERS = /\b(TODO|FIXME|HACK|XXX)\b|eslint-disable|@ts-ignore/;
+
+const importsOf = (text) => [...text.matchAll(/(?:^|\n)\s*(?:import|export)\b[^'"\n]*?from\s*['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|(?:^|\n)\s*import\s*['"]([^'"]+)['"]/g)]
+  .map((m) => m[1] || m[2] || m[3]);
+
+for (const f of tracked.filter((x) => /^(src|public|scripts)\/.*\.(mjs|js)$/.test(x))) {
+  const text = await fs.readFile(path.join(ROOT, f), 'utf8');
+  const imports = importsOf(text);
+
+  for (const spec of imports) {
+    if (!spec.startsWith('.') && !spec.startsWith('node:')) {
+      fail(`${f}: imports "${spec}". The project has no npm dependencies and Node built-ins are imported as "node:...". Use a built-in, or write the small piece you need.`);
+    }
+  }
+
+  if (f.startsWith('src/')) {
+    const allowed = LAYERS[f];
+    if (!allowed) {
+      fail(`${f}: new module with no declared layer. Add it to LAYERS in scripts/check.mjs with the list of project modules it is allowed to import.`);
+    } else {
+      for (const spec of imports.filter((s) => s.startsWith('.'))) {
+        const target = path.posix.normalize(path.posix.join(path.posix.dirname(f), spec));
+        const name = path.posix.basename(target, '.mjs');
+        if (!target.startsWith('src/')) fail(`${f}: imports "${spec}" from outside src/. Server code must not depend on browser or test code.`);
+        else if (!allowed.includes(name)) {
+          fail(`${f}: imports ./${name}.mjs, which its layer does not allow (allowed: ${allowed.join(', ') || 'nothing'}). Lower layers (xml, store, llm, inventory) must not know about the pipeline above them; move the shared piece down, or pass it in as an argument.`);
+        }
+      }
+    }
+    for (const rule of CONFINED) {
+      if (rule.re.test(text) && !rule.only.includes(f)) fail(`${f}: contains ${rule.what}, which is only allowed in ${rule.only.join(' and ')}. ${rule.fix}`);
+    }
+  }
+
+  if (f.startsWith('public/')) {
+    if (imports.length) fail(`${f}: has imports. The dashboard is a single dependency-free script; server modules cannot run in the browser.`);
+    if (/['"\x60]https?:\/\//.test(text)) fail(`${f}: contains an absolute URL. The dashboard only talks to its own server (relative /api/... paths); the content security policy blocks anything else.`);
+    if (/\beval\s*\(|new Function\s*\(|document\.write\s*\(/.test(text)) fail(`${f}: uses eval, new Function or document.write. Build HTML with template strings and esc(), which is what keeps feed and model text from running as code.`);
+  }
+
+  if (f !== 'scripts/check.mjs' && MARKERS.test(text)) {
+    fail(`${f}: contains a workaround marker (${text.match(MARKERS)[0]}). Fix the cause now or open an issue; markers in the code get copied as house style.`);
+  }
+}
+
 if (problems.length) {
   console.error(`check: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error(`  - ${p}`);
