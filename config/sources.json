@@ -1,7 +1,7 @@
 {
-  "version": 1,
+  "version": 2,
   "updated": "2026-11-27",
-  "notes": "Curated practitioner-grade infosec sources. Tier 1 = primary exploitation telemetry, frontline IR labs, investigative breach desks. Tier 2 = real-time practitioner HUMINT, advisories, ransomware leak monitoring. Optional X/Twitter connectors can be enabled with X_BEARER_TOKEN or RSSHub/Nitter mirrors.",
+  "notes": "Tier 1 = primary sources: government catalogs, research labs and incident responders publishing first-hand findings, and investigative reporters. Tier 2 = secondary reporting, advisories databases and social posts. Every vendor research lab carries the same weight so no vendor is favoured. `owner` groups feeds from the same publisher so they never count as independent corroboration. `alwaysSignal` skips the keyword filter for feeds that only publish security research.",
   "sources": [
     {
       "id": "cisa-kev",
@@ -21,9 +21,10 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 10,
+      "weight": 8,
       "enabled": true,
-      "description": "Cloud-native threat actors, SaaS/AI/identity attack paths, and cloud campaigns."
+      "description": "Cloud-native threat actors, SaaS/AI/identity attack paths, and cloud campaigns.",
+      "owner": "wiz"
     },
     {
       "id": "wiz-blog",
@@ -32,9 +33,10 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 9,
+      "weight": 8,
       "enabled": true,
-      "description": "High-impact cloud, container, AI, and supply-chain vulnerability disclosures."
+      "description": "High-impact cloud, container, AI, and supply-chain vulnerability disclosures.",
+      "owner": "wiz"
     },
     {
       "id": "gtig-mandiant",
@@ -43,9 +45,10 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 10,
+      "weight": 8,
       "enabled": true,
-      "description": "Frontline APT tracking, nation-state zero-days, and enterprise IR findings."
+      "description": "Frontline APT tracking, nation-state zero-days, and enterprise IR findings.",
+      "owner": "google"
     },
     {
       "id": "watchtowr",
@@ -54,9 +57,10 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 10,
+      "weight": 8,
       "enabled": true,
-      "description": "Unvarnished technical dissections of pre-auth RCEs, edge appliances, and active 0-days."
+      "description": "Unvarnished technical dissections of pre-auth RCEs, edge appliances, and active 0-days.",
+      "alwaysSignal": true
     },
     {
       "id": "huntress",
@@ -65,7 +69,7 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 9,
+      "weight": 8,
       "enabled": true,
       "description": "Frontline SOC investigations, active tradecraft (ClickFix, RMM abuse, infostealers, edge exploits)."
     },
@@ -76,9 +80,11 @@
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 10,
+      "weight": 8,
       "enabled": true,
-      "description": "Deep zero-day vulnerability research across browsers, OS kernels, and mobile platforms."
+      "description": "Deep zero-day vulnerability research across browsers, OS kernels, and mobile platforms.",
+      "alwaysSignal": true,
+      "owner": "google"
     },
     {
       "id": "google-security",
@@ -89,16 +95,17 @@
       "category": "research",
       "weight": 8,
       "enabled": true,
-      "description": "Google security engineering, Chrome/Android security, OSS supply chain, and AI security."
+      "description": "Google security engineering, Chrome/Android security, OSS supply chain, and AI security.",
+      "owner": "google"
     },
     {
       "id": "msrc-threat-intel",
-      "name": "Microsoft Threat Intelligence",
+      "name": "Microsoft Security Blog (Threat Intelligence)",
       "url": "https://www.microsoft.com/en-us/security/blog/feed/",
       "type": "rss",
       "tier": 1,
       "category": "research",
-      "weight": 9,
+      "weight": 8,
       "enabled": true,
       "description": "Identity/Entra ID intrusions, OAuth/token theft campaigns, nation-state Storm/Typhoon activity."
     },
@@ -144,7 +151,8 @@
       "category": "research",
       "weight": 9,
       "enabled": true,
-      "description": "Practitioner-first rapid analysis of enterprise edge flaws, ransomware, and vendor BS."
+      "description": "Practitioner-first rapid analysis of enterprise edge flaws, ransomware, and vendor BS.",
+      "owner": "beaumont"
     },
     {
       "id": "greynoise",
@@ -153,7 +161,7 @@
       "type": "rss",
       "tier": 1,
       "category": "exploitation",
-      "weight": 9,
+      "weight": 8,
       "enabled": true,
       "description": "Mass internet scanning and early warning of in-the-wild exploitation spikes."
     },
@@ -199,7 +207,9 @@
       "category": "breach-news",
       "weight": 10,
       "enabled": true,
-      "description": "Deep investigative journalism on breaches, cybercrime gangs, and underground markets."
+      "description": "Deep investigative journalism on breaches, cybercrime gangs, and underground markets.",
+      "alwaysSignal": true,
+      "owner": "krebs"
     },
     {
       "id": "riskybiz",
@@ -210,7 +220,8 @@
       "category": "breach-news",
       "weight": 10,
       "enabled": true,
-      "description": "High-signal curated practitioner digest of breaches, espionage, and active CVEs."
+      "description": "High-signal curated practitioner digest of breaches, espionage, and active CVEs.",
+      "alwaysSignal": true
     },
     {
       "id": "therecord",
@@ -228,7 +239,7 @@
       "name": "BleepingComputer",
       "url": "https://www.bleepingcomputer.com/feed/",
       "type": "rss",
-      "tier": 1,
+      "tier": 2,
       "category": "breach-news",
       "weight": 9,
       "enabled": true,
@@ -250,7 +261,7 @@
       "name": "DataBreaches.net",
       "url": "https://databreaches.net/feed/",
       "type": "rss",
-      "tier": 1,
+      "tier": 2,
       "category": "breach-news",
       "weight": 8,
       "enabled": true,
@@ -324,33 +335,35 @@
     },
     {
       "id": "masto-gossi",
-      "name": "HUMINT: Kevin Beaumont (@GossiTheDog)",
+      "name": "Social: Kevin Beaumont (@GossiTheDog)",
       "url": "https://cyberplace.social/@GossiTheDog.rss",
       "type": "social-rss",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 7,
       "enabled": true,
-      "description": "Real-time practitioner commentary on active exploits, ransomware, and vendor incidents."
+      "description": "Real-time practitioner commentary on active exploits, ransomware, and vendor incidents.",
+      "owner": "beaumont"
     },
     {
       "id": "masto-krebs",
-      "name": "HUMINT: Brian Krebs (infosec.exchange)",
+      "name": "Social: Brian Krebs (infosec.exchange)",
       "url": "https://infosec.exchange/@briankrebs.rss",
       "type": "social-rss",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 7,
       "enabled": true,
-      "description": "Early pointers and updates from Brian Krebs on breaking breaches and threat actors."
+      "description": "Early pointers and updates from Brian Krebs on breaking breaches and threat actors.",
+      "owner": "krebs"
     },
     {
       "id": "masto-dormann",
-      "name": "HUMINT: Will Dormann (@wdormann)",
+      "name": "Social: Will Dormann (@wdormann)",
       "url": "https://infosec.exchange/@wdormann.rss",
       "type": "social-rss",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 7,
       "enabled": true,
       "description": "Vulnerability analyst commentary cutting through CVE hype vs real exploitability."
@@ -361,21 +374,22 @@
       "url": "https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=briankrebs.bsky.social&limit=20",
       "type": "bluesky",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 6,
       "enabled": true,
-      "description": "Bluesky infosec posts via public ATProto API (no auth required)."
+      "description": "Bluesky infosec posts via public ATProto API (no auth required).",
+      "owner": "krebs"
     },
     {
       "id": "hn-security",
       "name": "Hacker News (Security Signal)",
-      "url": "https://hn.algolia.com/api/v1/search_by_date?query=breach+OR+CVE+OR+zero-day+OR+supply-chain+OR+vulnerability&tags=story&numericFilters=points>35&hitsPerPage=25",
-      "type": "hn-algolia",
+      "url": "https://hnrss.org/newest?q=breach+OR+CVE+OR+%22zero-day%22+OR+%22supply+chain%22+OR+vulnerability+OR+exploit&points=35&count=50",
+      "type": "rss",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 6,
       "enabled": true,
-      "description": "High-upvote engineering/security posts (35+ pts) catching OSS, AI, and dev-tool breaches fast."
+      "description": "Hacker News stories with 35+ points matching security keywords (via hnrss.org)."
     },
     {
       "id": "x-twitter-api",
@@ -383,11 +397,11 @@
       "url": "https://api.x.com/2/tweets/search/recent?query=(CVE-2026%20OR%20%22zero-day%22%20OR%20%22actively%20exploited%22%20OR%20%22supply%20chain%20attack%22)%20-is:retweet%20lang:en&max_results=30&tweet.fields=created_at,author_id,public_metrics",
       "type": "x-api",
       "tier": 2,
-      "category": "humint",
+      "category": "social",
       "weight": 7,
       "enabled": true,
       "requiresEnv": "X_BEARER_TOKEN",
-      "description": "Optional X API v2 connector. Set X_BEARER_TOKEN in .env (or add custom RSSHub/Nitter RSS feeds) to pull live X threat chatter."
+      "description": "Optional X API v2 connector. Set X_BEARER_TOKEN in .env to enable."
     }
   ]
 }
