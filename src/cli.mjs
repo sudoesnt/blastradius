@@ -17,7 +17,10 @@ export async function runPipeline({
   engine = 'auto',
   maxIncidents = 0,
   roleOverride = null,
-  onProgress
+  onProgress,
+  // Test seams: a source list and a model function, so the whole pipeline can run offline.
+  sources = null,
+  call = undefined
 } = {}) {
   const log = (m) => onProgress && onProgress(m);
   const baseProfile = await loadProfileConfig();
@@ -34,7 +37,7 @@ export async function runPipeline({
   // Only compare against digests that use stable incident ids (schema 2+).
   const prior = await loadLatestDigest(hours);
   const previous = prior?.schemaVersion >= 2 ? prior : null;
-  const raw = await ingestAll({ hours, onProgress });
+  const raw = await ingestAll({ hours, onProgress, sources });
   const full = raw.sourceHealth.filter((s) => s.coverage === 'full').length;
   const enabled = raw.sourceHealth.filter((s) => !['disabled', 'unconfigured'].includes(s.coverage)).length;
   log(`Collected ${raw.items.length} items in window. ${full}/${enabled} enabled sources cover the whole window.`);
@@ -46,7 +49,7 @@ export async function runPipeline({
   let mergeNote = null;
   if (useModel && clusters.length > 1) {
     try {
-      const groups = await findSameEventGroups(clusters, chosen);
+      const groups = await findSameEventGroups(clusters, chosen, call);
       if (groups.length) {
         const before = clusters.length;
         clusters = clusterIncidents(raw.items, profile, { sameEventGroups: groups });
@@ -61,7 +64,7 @@ export async function runPipeline({
 
   const cache = await loadAnalysisCache();
   const inventory = await loadInventory();
-  const analyzed = await analyzeClusters(clusters, profile, { hours, engine, maxIncidents, onProgress, cache, inventory });
+  const analyzed = await analyzeClusters(clusters, profile, { hours, engine, maxIncidents, onProgress, cache, inventory, ...(call ? { call } : {}) });
   await saveAnalysisCache(cache);
 
   const prevIds = new Set((previous?.incidents || []).map((i) => i.id));

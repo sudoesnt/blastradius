@@ -356,9 +356,9 @@ async function fetchSource(source, cutoffDate) {
  * Fetch every source, fold the results into the on-disk item store, and return the window from the store.
  * `persist: false` skips the store entirely (used by tests and dry runs).
  */
-export async function ingestAll({ hours = 168, onProgress, persist = true } = {}) {
+export async function ingestAll({ hours = 168, onProgress, persist = true, sources = null } = {}) {
   await loadEnvFile();
-  const cfg = await loadSourcesConfig();
+  const cfg = sources ? { sources } : await loadSourcesConfig();
   const now = new Date();
   const cutoffDate = new Date(now.getTime() - hours * 3600 * 1000);
 
