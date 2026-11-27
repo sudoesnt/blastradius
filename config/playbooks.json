@@ -1,12 +1,15 @@
 {
-  "version": 1,
-  "about": "Playbooks are short, reviewed checks that one person's own agent can run on their own machine. The analysis model only ever picks a playbook id from this list; it never writes the steps. Every playbook is read-only in `investigate`. Anything that changes something lives in `fixes`, and the agent must get a yes from the person for each one. Keep them personal in scope: this laptop, this browser, this person's accounts. Not an organisation's fleet or cloud estate.",
+  "version": 2,
+  "about": "Playbooks are short, reviewed checks that one person's own agent can run on their own machine. The analysis model only ever picks a playbook id from this list; it never writes the steps. Every playbook is read-only in `investigate`. Anything that changes something lives in `fixes`, and the agent must get a yes from the person for each one. Keep them personal in scope: this laptop, this browser, this person's accounts. Not an organisation's fleet or cloud estate. A playbook marked `needsIncident` only makes sense with the facts of a specific incident (for example which package is affected), so it is not offered as an on-demand checkup.",
   "playbooks": [
     {
       "id": "github-tokens",
       "title": "GitHub tokens and sign-ins on this machine",
       "when": "An incident started with a stolen or leaked GitHub token, SSH key, session or developer account.",
-      "needs": ["gh (optional)", "git"],
+      "needs": [
+        "gh (optional)",
+        "git"
+      ],
       "investigate": [
         "Run `gh auth status` and report which accounts are signed in and what scopes each token has. If gh is not installed, say so and continue.",
         "Run `git config --global --get-all credential.helper` and report where git stores credentials.",
@@ -49,7 +52,9 @@
       "id": "local-exposed-services",
       "title": "Local services reachable from the network",
       "when": "An incident involved a developer tool, local AI agent, MCP server, database or container that listened on all network interfaces without authentication.",
-      "needs": ["docker (optional)"],
+      "needs": [
+        "docker (optional)"
+      ],
       "investigate": [
         "List listening TCP ports that are not bound to loopback. Windows (PowerShell): `Get-NetTCPConnection -State Listen | Where-Object { $_.LocalAddress -notin '127.0.0.1','::1' } | Select-Object LocalAddress,LocalPort,OwningProcess`, then name each owning process with `Get-Process -Id <pid>`. macOS or Linux: `lsof -nP -iTCP -sTCP:LISTEN` and keep the rows not bound to 127.0.0.1 or [::1].",
         "If Docker is installed, run `docker ps --format \"{{.Names}}\\t{{.Image}}\\t{{.Ports}}\"` and list containers that publish a port on 0.0.0.0 or [::].",
@@ -87,6 +92,7 @@
       "id": "package-exposure",
       "title": "Is the affected package in my projects?",
       "when": "A vulnerability or compromise in a named open-source package, library or dependency.",
+      "needsIncident": true,
       "needs": [],
       "investigate": [
         "The affected packages and CVE ids are listed under Facts in this handoff. Search the person's code folders for lockfiles and manifests (package-lock.json, pnpm-lock.yaml, yarn.lock, package.json, requirements*.txt, poetry.lock, uv.lock, go.sum, go.mod, Cargo.lock, composer.lock, Gemfile.lock, mix.lock).",
@@ -98,6 +104,82 @@
       "fixes": [
         "Update the dependency to the fixed version in one project and run that project's tests.",
         "Remove a dependency the person confirms is unused."
+      ]
+    },
+    {
+      "id": "agent-config-audit",
+      "title": "AI coding agents: MCP servers, skills and auto-approve rules on this machine",
+      "when": "An incident involved an AI coding agent, an MCP server, a malicious or poisoned agent skill, plugin or rules file, prompt injection that led an agent to run commands, or agent settings that approve actions without asking.",
+      "needs": [],
+      "investigate": [
+        "Find the agent configuration files that exist on this machine. Do not start any agent or MCP server to do this; read the files. Places to look, where present: Claude Code `~/.claude.json`, `~/.claude/settings.json`, `~/.claude/settings.local.json`, and `.mcp.json` and `.claude/settings*.json` inside the person's project folders; Claude desktop `claude_desktop_config.json` (under `%APPDATA%\\Claude` on Windows, `~/Library/Application Support/Claude` on macOS); Codex `~/.codex/config.toml`; Gemini CLI `~/.gemini/settings.json` and Antigravity's files under `~/.gemini/antigravity`; Cursor `~/.cursor/mcp.json` and `.cursor/mcp.json` in projects; VS Code `.vscode/mcp.json` in projects and `mcp.json` in the user profile; Windsurf `~/.codeium/windsurf/mcp_config.json`.",
+        "List every MCP server you find as one row: which agent, the server's name, whether it is a local command or a remote URL, the command or host, and the NAMES of any environment variables or headers it is given. Never print their values.",
+        "Flag servers that: fetch and run a package each time with no pinned version (for example `npx -y some-package` or `uvx some-package` with no `@version`), connect to a remote URL over plain http, come from a publisher the person may not recognise, or have a secret written directly in the config file (say which variable, not its value).",
+        "List the rules that let an agent act without asking. In Claude Code settings that is `permissions.allow`, `permissions.defaultMode`, `enableAllProjectMcpServers` and `enabledMcpjsonServers`; in Codex config it is `approval_policy` and `sandbox_mode`; in other agents look for settings named auto-approve, auto-run, yolo or trusted. Flag anything that approves all shell commands, all tools of a server, or turns approval off entirely.",
+        "Search the person's shell profiles and aliases for agent launch flags that skip approval, such as `--dangerously-skip-permissions`, `--yolo` or `--full-auto`. Report file and line.",
+        "List hooks and startup commands configured for agents (for example the `hooks` section of Claude Code settings): event, the command it runs, and which file defines it.",
+        "List installed skills, plugins, extensions and custom commands for each agent (for example folders under `~/.claude/skills`, `~/.claude/plugins`, `~/.claude/commands`, `~/.codex/prompts`): name, where it came from if the folder says, and when it last changed. Flag any that changed in the last two weeks and any that contain scripts.",
+        "In the person's project folders, look for agent instruction files that arrive with a repository and are read automatically (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.cursorrules`, `.cursor/rules`, `.github/copilot-instructions.md`). For repositories the person did not write, report any that tell an agent to run commands, fetch URLs or send data somewhere."
+      ],
+      "humanSteps": [
+        "For each MCP server in the list, ask yourself: do I still use it, and do I know who publishes it?",
+        "For each auto-approve rule, ask whether you would be comfortable with that action happening because of text an agent read on a web page or in someone else's repository."
+      ],
+      "fixes": [
+        "Remove an MCP server entry the person no longer uses from the config file that defines it.",
+        "Pin a server's package to the version currently in use instead of fetching the latest each time.",
+        "Narrow or remove an allow rule that approves every command.",
+        "Move a secret out of a config file into the agent's own secret store or an environment variable, after the person has rotated it."
+      ]
+    },
+    {
+      "id": "cloud-cli-credentials",
+      "title": "Cloud command-line logins, static keys and forgotten sandboxes",
+      "when": "An incident involved stolen or leaked cloud credentials, long-lived access keys or service account keys, or an attacker finding and using a forgotten demo, test or sandbox cloud account or project.",
+      "needs": [
+        "gcloud (optional)",
+        "aws (optional)",
+        "az (optional)"
+      ],
+      "investigate": [
+        "This is about the person's own cloud logins on this machine and their own sandbox, demo and personal projects. Do not enumerate an employer's organisation; if a command would list company-wide resources, stop and ask which accounts are theirs to check.",
+        "Google Cloud, if `gcloud` is installed: run `gcloud auth list` and `gcloud config configurations list` and report which accounts are signed in and which is active. Check whether an application-default credentials file exists (`%APPDATA%\\gcloud\\application_default_credentials.json` on Windows, `~/.config/gcloud/application_default_credentials.json` elsewhere) and report only its `type` field: `authorized_user` is a normal login, `service_account` is a static key.",
+        "AWS, if `aws` is installed: run `aws configure list-profiles`. For each profile, read `~/.aws/config` and `~/.aws/credentials` and report whether it uses SSO or a role (short-lived) or a static `aws_access_key_id` (long-lived). Report profile names only, never key values. For a static profile the person confirms is theirs, `aws iam list-access-keys --profile NAME` shows each key's creation date.",
+        "Azure, if `az` is installed: run `az account list --output table` and report the subscriptions this machine is signed in to.",
+        "Search the home folder and the person's code and notes folders for service account key files and other static cloud credentials: JSON files containing both `\"type\": \"service_account\"` and `\"private_key\"`, files named like `*credentials*.json`, `*-key.json`, `*.pem`, and `.env` files defining `AWS_SECRET_ACCESS_KEY`, `GOOGLE_APPLICATION_CREDENTIALS` or `AZURE_CLIENT_SECRET`. Report path, kind and file date. Never print key material.",
+        "List environment variable NAMES (not values) set for this user that start with AWS_, GOOGLE_, GCLOUD_, CLOUDSDK_, AZURE_ or ARM_.",
+        "Forgotten sandboxes: with the person's agreement, run `gcloud projects list --format=\"table(projectId,name,createTime)\"` for their own account and point out projects they may have forgotten (old, or named like demo, test, poc, sandbox, tmp). For a project they pick, `gcloud iam service-accounts list --project PROJECT` and then `gcloud iam service-accounts keys list --iam-account EMAIL --managed-by user` shows user-created keys and their ages."
+      ],
+      "humanSteps": [
+        "For every static key the scan found, decide: is it still used, and by what? A key nobody can name a use for should go.",
+        "For every sandbox project or account you had forgotten, decide whether to shut it down. Check its billing page first for anything still running."
+      ],
+      "fixes": [
+        "Delete a service account key file from disk after the person confirms the key has been disabled or deleted in the cloud console.",
+        "Remove a static profile from `~/.aws/credentials` that the person no longer uses.",
+        "Run the command that disables or deletes one specific cloud key the person has named, showing the exact command first.",
+        "Switch a profile from a static key to SSO or short-lived credentials, with the person doing the browser sign-in."
+      ]
+    },
+    {
+      "id": "editor-extensions",
+      "title": "Code editor extensions on this machine",
+      "when": "An incident involved a malicious, typosquatted or hijacked extension for VS Code or an editor built on it (Cursor, Windsurf, Antigravity and similar), or an extension marketplace or Open VSX compromise.",
+      "needs": [],
+      "investigate": [
+        "Find the editors installed and their extension folders, where present: VS Code `~/.vscode/extensions`, VS Code Insiders `~/.vscode-insiders/extensions`, Cursor `~/.cursor/extensions`, Windsurf `~/.windsurf/extensions`, VSCodium `~/.vscode-oss/extensions`, and Antigravity under `~/.antigravity/extensions` or `~/.gemini/antigravity`. If the `code` command is available, `code --list-extensions --show-versions` gives the same list for VS Code.",
+        "For each editor, read the `extensions.json` file in its extension folder and each extension's `package.json`. List publisher, name, version, and the date the extension folder was created or last changed.",
+        "If this handoff's Facts or Background name specific extension ids or publishers, say plainly for each one whether it is installed here, in which editor, and which version.",
+        "Flag extensions that: were added or updated in the last two weeks, have a publisher or name one character away from a well-known one, were added from a `.vsix` file rather than a marketplace (the entry in `extensions.json` says so), or whose `package.json` activates on every start (`\"*\"` or `onStartupFinished`) while also bundling native binaries or shell scripts.",
+        "Check each editor's user `settings.json` for `extensions.autoUpdate` and report whether extensions update themselves without the person seeing it."
+      ],
+      "humanSteps": [
+        "Open the Extensions view in each editor and compare it with the list above. Anything you do not remember choosing is worth a second look.",
+        "If an extension named in the incident is installed, assume anything that editor could reach was exposed: tokens in its terminal environment, repositories it had open, and its saved logins."
+      ],
+      "fixes": [
+        "Tell the person exactly which extension to remove from the editor's Extensions view (removing it there is safer than deleting its folder).",
+        "Turn off automatic extension updates in the editor's user settings, if the person wants to approve updates themselves."
       ]
     },
     {
