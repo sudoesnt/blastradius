@@ -94,8 +94,8 @@
       "tier": 1,
       "category": "research",
       "weight": 8,
-      "enabled": true,
-      "description": "Google security engineering, Chrome/Android security, OSS supply chain, and AI security.",
+      "enabled": false,
+      "description": "Disabled 2026-11-27: this feed has had no new posts since 2026-04-23. Re-enable if the blog resumes or moves.",
       "owner": "google"
     },
     {
@@ -376,8 +376,8 @@
       "tier": 2,
       "category": "social",
       "weight": 6,
-      "enabled": true,
-      "description": "Bluesky infosec posts via public ATProto API (no auth required).",
+      "enabled": false,
+      "description": "Disabled 2026-11-27: no posts since 2025-02. The same author is covered by his blog and Mastodon feeds.",
       "owner": "krebs"
     },
     {
