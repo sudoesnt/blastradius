@@ -608,3 +608,10 @@ a:hover { text-decoration: underline; }
 .verdict-UNANALYZED .sources-row { margin-top: 8px; }
 .source-note { font-size: 11px; color: var(--text-muted); margin: 2px 0 0 14px; }
 .dot-off { background: var(--border-strong); }
+
+/* --- read-only demo --- */
+.demo-banner { background: var(--cyan-bg); border-bottom: 1px solid var(--cyan-border); color: var(--text); font-size: 13px; line-height: 1.5; }
+.demo-banner.hidden { display: none; }
+.demo-banner-inner { max-width: 1400px; margin: 0 auto; padding: 9px 20px; }
+.demo-banner a { color: var(--cyan); font-weight: 600; }
+button:disabled, select:disabled, input:disabled, textarea:disabled { opacity: 0.45; cursor: not-allowed; }

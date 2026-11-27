@@ -20,6 +20,8 @@ const els = {
   briefingTitle: document.getElementById('briefingTitle'),
   briefingMeta: document.getElementById('briefingMeta'),
   digestNotice: document.getElementById('digestNotice'),
+  demoBanner: document.getElementById('demoBanner'),
+  demoSnapshotDate: document.getElementById('demoSnapshotDate'),
   executiveSummary: document.getElementById('executiveSummary'),
   kpiAll: document.getElementById('kpiAll'),
   kpiActNow: document.getElementById('kpiActNow'),
@@ -117,7 +119,36 @@ function actionKey(incidentId, text) {
   return `${incidentId}::${text.slice(0, 64)}`;
 }
 
+// Static demo mode: the same dashboard served as plain files with a pre-built snapshot (no server, read-only).
+// The build step marks the page with data-static; everything the server would answer comes from snapshot/ files,
+// and checklist ticks are kept in this browser only.
+const STATIC = Boolean(document.documentElement?.dataset?.static);
+const STATIC_FILES = { '/api/presets': 'snapshot/presets.json', '/api/profile': 'snapshot/profile.json' };
+const LOCAL_STATE_KEY = 'blastradius-demo-state';
+
+function readLocalState() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_STATE_KEY)) || { checkedActions: {} }; } catch { return { checkedActions: {} }; }
+}
+
+async function fetchStatic(url, opts) {
+  if (url === '/api/state') {
+    const current = readLocalState();
+    if (opts?.method === 'POST') {
+      Object.assign(current.checkedActions, JSON.parse(opts.body).checkedActions || {});
+      try { localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(current)); } catch { /* private browsing: ticks last for this page view */ }
+    }
+    return current;
+  }
+  const digest = url.match(/^\/api\/digest\?hours=(\d+)$/);
+  const file = digest ? `snapshot/digest-${digest[1]}h.json` : STATIC_FILES[url];
+  if (!file) throw new Error('Not available in the read-only demo.');
+  const res = await fetch(file);
+  if (!res.ok) throw new Error(digest ? 'This demo does not include a snapshot for that window.' : `HTTP ${res.status}`);
+  return res.json();
+}
+
 async function fetchJson(url, opts) {
+  if (STATIC) return fetchStatic(url, opts);
   const res = await fetch(url, opts);
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
@@ -194,7 +225,9 @@ async function loadDigest(hours = state.hours) {
     els.checklistProgress.textContent = '0/0';
     els.rootCauseBars.innerHTML = '';
     els.rootCauseTotal.textContent = '';
-    els.incidentList.innerHTML = `<div class="empty-state">Click <strong>Refresh Digest</strong> to build the ${esc(label)} digest.</div>`;
+    els.incidentList.innerHTML = STATIC
+      ? `<div class="empty-state">No ${esc(label)} snapshot in this demo. Pick another window.</div>`
+      : `<div class="empty-state">Click <strong>Refresh Digest</strong> to build the ${esc(label)} digest.</div>`;
   }
 }
 
@@ -662,7 +695,7 @@ els.searchInput.addEventListener('input', (e) => {
 });
 
 els.exportBtn.addEventListener('click', () => {
-  window.location.href = `/api/export/markdown?hours=${state.hours}`;
+  window.location.href = STATIC ? `snapshot/digest-${Number(state.hours)}h.md` : `/api/export/markdown?hours=${state.hours}`;
 });
 els.configBtn.addEventListener('click', openDrawer);
 els.closeDrawerBtn.addEventListener('click', closeDrawer);
@@ -695,3 +728,13 @@ els.saveProfileBtn.addEventListener('click', async () => {
 // Boot
 await Promise.all([loadPresetsAndProfile(), loadState()]);
 await loadDigest(168);
+
+if (STATIC) {
+  // Read-only: nothing here can start a run or change a profile.
+  for (const el of [els.refreshBtn, els.applyRoleBtn, els.rolePresetSelect, els.roleTitleInput, els.roleStackInput, els.engineSelect, els.saveProfileBtn, els.profileEditor]) {
+    el.disabled = true;
+    el.title = 'Disabled in the read-only demo. Run BlastRadius locally to use this.';
+  }
+  els.demoSnapshotDate.textContent = state.digest ? new Date(state.digest.generatedAt).toISOString().slice(0, 10) : 'unknown date';
+  els.demoBanner.classList.remove('hidden');
+}
