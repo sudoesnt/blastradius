@@ -420,6 +420,7 @@ function renderIncidents() {
         </div>
 
         <h3 class="inc-title">${esc(inc.title)}</h3>
+        ${renderNeedBlock(inc)}
 
         <div class="tldr-lines">
           <div class="tldr-row">
@@ -490,6 +491,7 @@ function renderIncidents() {
     });
   });
 
+  wireCopyButtons(els.incidentList);
   els.incidentList.querySelectorAll('[data-handoff]').forEach((btn) => {
     btn.addEventListener('click', () => handOff(btn.dataset.handoff, btn.dataset.launch === '1'));
   });
@@ -506,7 +508,11 @@ function renderLockdownChecklist() {
   const items = state.digest?.topLockdownChecklist || [];
   if (!items.length) {
     els.checklistProgress.textContent = '0/0';
-    els.lockdownList.innerHTML = `<div class="mono-dim">Nothing urgent to lock down in this window.</div>`;
+    els.lockdownList.innerHTML = needListHtml() || `<div class="mono-dim">Nothing urgent to lock down in this window.</div>`;
+    els.lockdownList.querySelectorAll('input[data-action-key]').forEach((cb) => {
+      cb.addEventListener('change', (e) => toggleAction(cb.dataset.actionKey, e.target.checked));
+    });
+    wireCopyButtons(els.lockdownList);
     return;
   }
 
@@ -526,7 +532,8 @@ function renderLockdownChecklist() {
   }).join('');
 
   els.checklistProgress.textContent = `${done}/${items.length} done`;
-  els.lockdownList.innerHTML = html;
+  els.lockdownList.innerHTML = needListHtml() + html;
+  wireCopyButtons(els.lockdownList);
   els.lockdownList.querySelectorAll('input[data-action-key]').forEach((cb) => {
     cb.addEventListener('change', (e) => toggleAction(cb.dataset.actionKey, e.target.checked));
   });
@@ -678,22 +685,162 @@ function currentAgent() {
   return state.agents.find((a) => a.id === state.agentId) || state.agents[0] || null;
 }
 
+// Text from a receipt, escaped, with browser pages and web links made easy to spot. Web links become real links;
+// browser-internal pages (chrome://..., about:...) cannot be linked from a web page, so they are shown as code.
+function richText(text) {
+  return esc(text).replace(/\b(https?:\/\/[^\s&<)]+[^\s&<).,;:]|(?:chrome|edge|brave|about):[\w\-./#?=]+)/gi, (m) =>
+    (/^https?:/i.test(m) ? `<a href="${m}" target="_blank" rel="noopener noreferrer">${m}</a>` : `<code class="where-chip">${m}</code>`));
+}
+
+const turnKey = (handoffId, i) => `turn::${handoffId}::${i}`;
+
+// Steps the agent left for the person, across every receipt for incidents in this digest.
+function openTurns() {
+  const out = [];
+  const seen = new Set();
+  for (const h of state.handoffs) {
+    if (!h.receipt || seen.has(h.incidentId)) continue;
+    seen.add(h.incidentId);
+    const inc = (state.digest?.incidents || []).find((i) => i.id === h.incidentId);
+    if (!inc) continue;
+    h.receipt.yourTurn.forEach((t, i) => out.push({ key: turnKey(h.id, i), turn: t, incident: inc, done: Boolean(state.checkedActions[turnKey(h.id, i)]) }));
+  }
+  return out;
+}
+
+function openButton(open) {
+  if (!open) return '';
+  if (/^https?:\/\//i.test(open)) return `<a class="turn-open" href="${esc(safeHref(open))}" target="_blank" rel="noopener noreferrer">Open page</a>`;
+  return `<button class="turn-open" data-copy="${esc(open)}" title="Browsers do not allow links to this kind of page. Copy it and paste it into the address bar.">Copy ${esc(open)}</button>`;
+}
+
+function renderTurn(key, t, done) {
+  return `<div class="turn ${done ? 'checked' : ''}">
+      <label class="turn-main">
+        <input type="checkbox" data-action-key="${esc(key)}" ${done ? 'checked' : ''} />
+        <span class="turn-do">${richText(t.do)}</span>
+      </label>
+      <div class="turn-extra">
+        ${(t.opens || []).length ? `<div class="turn-opens">${t.opens.map(openButton).join('')}</div>` : ''}
+        ${t.why ? `<span class="turn-why">${richText(t.why)}</span>` : ''}
+      </div>
+    </div>`;
+}
+
 function receiptLine(h) {
   const who = esc(h.agentLabel || 'your agent');
   if (!h.receipt) {
-    return `<span class="handoff-status">${h.launched ? `Handed to ${who}` : `Prompt made for ${who}`} ${esc(fmtRelative(h.createdAt))}. Waiting for its receipt.</span>`;
+    return `<div class="receipt receipt-waiting"><span class="spinner"></span> ${h.launched ? `${who} is working on this` : `Prompt made for ${who}`} (${esc(fmtRelative(h.createdAt))}). The result will appear here.</div>`;
   }
   const r = h.receipt;
-  const label = { clean: 'Clean', findings: 'Findings', fixed: 'Fixed', 'needs-you': 'Needs you' }[r.result] || 'Done';
-  const items = [
-    ...r.findings.map((f) => `<li><strong>Found:</strong> ${esc(f.what)}${f.where ? ` <span class="mono-dim">${esc(f.where)}</span>` : ''}</li>`),
-    ...r.changes.map((c) => `<li><strong>Changed${c.approvedByPerson ? ' (you approved)' : ''}:</strong> ${esc(c.what)}</li>`),
-    ...r.needsYou.map((s) => `<li><strong>Still yours:</strong> ${esc(s)}</li>`)
-  ].join('');
-  return `<div class="receipt receipt-${esc(r.result)}">
-      <div><span class="receipt-result">${esc(label)}</span> Checked by ${who} ${esc(fmtRelative(h.receiptAt))}. ${esc(r.summary)}</div>
-      ${items ? `<ul class="receipt-items">${items}</ul>` : ''}
+  const turns = r.yourTurn.map((t, i) => ({ t, key: turnKey(h.id, i), done: Boolean(state.checkedActions[turnKey(h.id, i)]) }));
+  const left = turns.filter((x) => !x.done).length;
+
+  // One headline that says where things stand, before any detail.
+  let tone = 'ok';
+  let headline = 'All clear';
+  if (r.attention.length) {
+    tone = 'attention';
+    headline = `${r.attention.length} thing${r.attention.length === 1 ? '' : 's'} need${r.attention.length === 1 ? 's' : ''} a decision`;
+    if (left) headline += ` · ${left} quick step${left === 1 ? '' : 's'} for you`;
+  } else if (left) {
+    tone = 'turn';
+    headline = `Nothing wrong found · ${left} quick step${left === 1 ? '' : 's'} left for you`;
+  } else if (turns.length) {
+    headline = 'All clear, and you have done your part';
+  }
+  if (r.result === 'fixed' && !r.attention.length) headline = left ? `Fixed · ${left} quick step${left === 1 ? '' : 's'} left for you` : 'Fixed';
+
+  const attentionHtml = r.attention.length ? `
+      <div class="receipt-section">
+        <div class="receipt-h"><span>Needs a decision</span><span class="receipt-count">${r.attention.length}</span></div>
+        ${r.attention.map((a) => `
+          <details class="finding">
+            <summary>${richText(a.title)}</summary>
+            ${a.detail ? `<p>${richText(a.detail)}</p>` : ''}
+            ${a.where ? `<p class="finding-where">Where: ${esc(a.where)}</p>` : ''}
+          </details>`).join('')}
+      </div>` : '';
+
+  const changesHtml = r.changes.length ? `
+      <div class="receipt-section">
+        <div class="receipt-h"><span>Changed</span><span class="receipt-count">${r.changes.length}</span></div>
+        <ul class="fine-list">${r.changes.map((c) => `<li>${richText(c.what)}${c.approvedByPerson ? ' <span class="receipt-count">you approved</span>' : ''}</li>`).join('')}</ul>
+      </div>` : '';
+
+  const fineHtml = r.lookedFine.length ? `
+      <details class="receipt-section fine">
+        <summary class="receipt-h"><span>Looked fine</span><span class="receipt-count">${r.lookedFine.length} checked</span></summary>
+        <ul class="fine-list">${r.lookedFine.map((s) => `<li>${richText(s)}</li>`).join('')}</ul>
+      </details>` : '';
+
+  return `<div class="receipt receipt-tone-${tone}">
+      <div class="receipt-head">
+        <span class="receipt-headline">${esc(headline)}</span>
+        <span class="receipt-by">${who} checked ${esc(fmtRelative(h.receiptAt))}</span>
+      </div>
+      ${r.summary ? `<p class="receipt-summary">${richText(r.summary)}</p>` : ''}
+      ${attentionHtml}${fineHtml}
     </div>`;
+}
+
+// The outcome of a handoff, shown first on the card in two plain parts: what the agent fixed, and what is left for
+// the person. Everything else in the receipt (what it looked at, what needs a decision) sits lower down.
+function renderNeedBlock(inc) {
+  const h = state.handoffs.find((x) => x.incidentId === inc.id && x.receipt);
+  if (!h) return '';
+  const r = h.receipt;
+  const who = esc(h.agentLabel || 'your agent');
+  const turns = r.yourTurn.map((t, i) => ({ t, key: turnKey(h.id, i), done: Boolean(state.checkedActions[turnKey(h.id, i)]) }));
+  const left = turns.filter((x) => !x.done).length;
+
+  const nothing = r.attention.length
+    ? `Nothing yet. It found ${r.attention.length} thing${r.attention.length === 1 ? '' : 's'} that need${r.attention.length === 1 ? 's' : ''} your decision first (see below).`
+    : 'Nothing needed fixing.';
+  const fixedHtml = r.changes.length
+    ? `<ul class="fixed-list">${r.changes.map((c) => `<li>${richText(c.what)}${c.approvedByPerson ? ' <span class="need-count">you approved this</span>' : ''}</li>`).join('')}</ul>`
+    : `<p class="fixed-none">${esc(nothing)}</p>`;
+
+  const needHtml = turns.length
+    ? turns.map((x) => renderTurn(x.key, x.t, x.done)).join('')
+    : '<p class="fixed-none">Nothing. You are done with this one.</p>';
+
+  return `<div class="outcome ${left ? 'outcome-open' : 'outcome-done'}">
+      <div class="outcome-by">${who} checked this ${esc(fmtRelative(h.receiptAt))}</div>
+      <div class="outcome-part">
+        <div class="need-h"><span class="fixed-title">What the agent fixed</span>${r.changes.length ? `<span class="need-count">${r.changes.length}</span>` : ''}</div>
+        ${fixedHtml}
+      </div>
+      <div class="outcome-part need">
+        <div class="need-h">
+          <span class="need-title">You need to do this</span>
+          ${turns.length ? `<span class="need-count">${turns.length - left} of ${turns.length} done</span>` : ''}
+        </div>
+        ${needHtml}
+      </div>
+    </div>`;
+}
+
+function needListHtml() {
+  const open = openTurns().filter((x) => !x.done);
+  if (!open.length) return '';
+  return `<div class="need need-side">
+      <div class="need-h"><span class="need-title">You need to do this</span><span class="need-count">${open.length} left</span></div>
+      ${open.map((x) => `${renderTurn(x.key, x.turn, false)}<span class="lockdown-src">${esc(x.incident.title.slice(0, 68))}</span>`).join('')}
+    </div>`;
+}
+
+function wireCopyButtons(root) {
+  root.querySelectorAll('[data-copy]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy);
+        btn.textContent = 'Copied. Paste it in the address bar';
+      } catch {
+        btn.textContent = btn.dataset.copy;
+      }
+    });
+  });
 }
 
 function renderHandoffRow(inc) {
@@ -717,7 +864,12 @@ function renderHandoffRow(inc) {
   }
   const agent = currentAgent();
   if (!agent) return '';
-  const latest = state.handoffs.find((h) => h.incidentId === inc.id);
+  // Show the newest finished check. A handoff still in progress is shown too, but only while it is recent:
+  // an abandoned one must not hide a result that already came back.
+  const mine = state.handoffs.filter((h) => h.incidentId === inc.id);
+  const done = mine.find((h) => h.receipt);
+  const running = mine.find((h) => !h.receipt && Date.now() - Date.parse(h.createdAt) < 45 * 60000
+    && (!done || Date.parse(h.createdAt) > Date.parse(done.createdAt)));
   const books = (inc.playbooks || []).length;
   const note = state.handoffNotes[inc.id];
   const tip = agent.canLaunch
@@ -732,7 +884,8 @@ function renderHandoffRow(inc) {
           <span class="handoff-scope">${books ? `${Number(books)} reviewed check${books === 1 ? '' : 's'}` : 'guided, read-only'} · runs on this machine with your own logins</span>
         </div>
         ${note ? `<span class="handoff-status">${esc(note)}</span>` : ''}
-        ${latest ? receiptLine(latest) : ''}
+        ${running ? receiptLine(running) : ''}
+        ${done ? receiptLine(done) : ''}
       </div>
     </div>`;
 }
