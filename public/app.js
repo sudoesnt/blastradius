@@ -9,7 +9,12 @@ const state = {
   search: '',
   expandedIds: new Set(),
   checkedActions: {},
-  pollTimer: null
+  pollTimer: null,
+  agents: [],
+  agentId: null,
+  handoffs: [],
+  handoffNotes: {},
+  handoffTimer: null
 };
 
 const els = {
@@ -40,6 +45,8 @@ const els = {
   ransomGroups: document.getElementById('ransomGroups'),
   ransomRecent: document.getElementById('ransomRecent'),
   searchInput: document.getElementById('searchInput'),
+  agentSelect: document.getElementById('agentSelect'),
+  agentPick: document.getElementById('agentPick'),
   engineSelect: document.getElementById('engineSelect'),
   refreshBtn: document.getElementById('refreshBtn'),
   exportBtn: document.getElementById('exportBtn'),
@@ -361,6 +368,8 @@ function renderIncidents() {
          </div>`
       : '';
 
+    const handoffHtml = (inc.verdict === 'ACT_NOW' || inc.verdict === 'WATCH_HARDEN') ? renderHandoffRow(inc) : '';
+
     const sourcesHtml = (inc.sources || []).map((s) => `
       <a class="source-link" href="${esc(safeHref(s.url))}" target="_blank" rel="noopener noreferrer">
         <span class="mono-dim">T${Number(s.tier)}</span>
@@ -421,6 +430,7 @@ function renderIncidents() {
           </div>
           ${inv}
           ${inlineActionsHtml}
+          ${handoffHtml}
         </div>
 
         <div class="inc-meta-row">
@@ -476,6 +486,10 @@ function renderIncidents() {
         btn.textContent = 'Less ▲';
       }
     });
+  });
+
+  els.incidentList.querySelectorAll('[data-handoff]').forEach((btn) => {
+    btn.addEventListener('click', () => handOff(btn.dataset.handoff, btn.dataset.launch === '1'));
   });
 
   els.incidentList.querySelectorAll('input[data-action-key]').forEach((cb) => {
@@ -647,7 +661,164 @@ function closeDrawer() {
   els.configDrawer.classList.add('hidden');
 }
 
+// ---------- Hand an incident to your own agent ----------
+//
+// The button asks the local server to write a prompt built from a reviewed playbook and, where the chosen agent has
+// a command-line tool on this machine, to open it in a visible terminal. The agent writes a small receipt file when
+// it is done; the dashboard shows it here and ticks the incident's boxes if the check came back clean or fixed.
+
+const APPLIED_RECEIPTS_KEY = 'blastradius-applied-receipts';
+
+function currentAgent() {
+  return state.agents.find((a) => a.id === state.agentId) || state.agents[0] || null;
+}
+
+function receiptLine(h) {
+  const who = esc(h.agentLabel || 'your agent');
+  if (!h.receipt) {
+    return `<span class="handoff-status">${h.launched ? `Handed to ${who}` : `Prompt made for ${who}`} ${esc(fmtRelative(h.createdAt))}. Waiting for its receipt.</span>`;
+  }
+  const r = h.receipt;
+  const label = { clean: 'Clean', findings: 'Findings', fixed: 'Fixed', 'needs-you': 'Needs you' }[r.result] || 'Done';
+  const items = [
+    ...r.findings.map((f) => `<li><strong>Found:</strong> ${esc(f.what)}${f.where ? ` <span class="mono-dim">${esc(f.where)}</span>` : ''}</li>`),
+    ...r.changes.map((c) => `<li><strong>Changed${c.approvedByPerson ? ' (you approved)' : ''}:</strong> ${esc(c.what)}</li>`),
+    ...r.needsYou.map((s) => `<li><strong>Still yours:</strong> ${esc(s)}</li>`)
+  ].join('');
+  return `<div class="receipt receipt-${esc(r.result)}">
+      <div><span class="receipt-result">${esc(label)}</span> Checked by ${who} ${esc(fmtRelative(h.receiptAt))}. ${esc(r.summary)}</div>
+      ${items ? `<ul class="receipt-items">${items}</ul>` : ''}
+    </div>`;
+}
+
+function renderHandoffRow(inc) {
+  if (STATIC) {
+    return `<div class="tldr-row">
+      <span class="tldr-k">Agent</span>
+      <div class="handoff"><div class="handoff-actions">
+        <button class="handoff-btn" disabled>Give this to your agent</button>
+        <span class="handoff-scope">Available when you run BlastRadius on your own machine.</span>
+      </div></div>
+    </div>`;
+  }
+  const agent = currentAgent();
+  if (!agent) return '';
+  const latest = state.handoffs.find((h) => h.incidentId === inc.id);
+  const books = (inc.playbooks || []).length;
+  const note = state.handoffNotes[inc.id];
+  const tip = agent.canLaunch
+    ? `Opens ${agent.label} in a terminal on this machine. It checks first and asks before changing anything.`
+    : `${agent.label} has no launcher on this machine, so the prompt is copied for you to paste.`;
+  return `<div class="tldr-row">
+      <span class="tldr-k">Agent</span>
+      <div class="handoff">
+        <div class="handoff-actions">
+          <button class="handoff-btn" data-handoff="${esc(inc.id)}" data-launch="1" title="${esc(tip)}">Give this to ${esc(agent.label)}</button>
+          <button class="handoff-copy" data-handoff="${esc(inc.id)}" title="Copy the same prompt to paste into any agent.">Copy prompt</button>
+          <span class="handoff-scope">${books ? `${Number(books)} reviewed check${books === 1 ? '' : 's'}` : 'guided, read-only'} · runs on this machine with your own logins</span>
+        </div>
+        ${note ? `<span class="handoff-status">${esc(note)}</span>` : ''}
+        ${latest ? receiptLine(latest) : ''}
+      </div>
+    </div>`;
+}
+
+async function loadAgentsAndHandoffs() {
+  if (STATIC) return;
+  try {
+    const [{ agents }, { handoffs }] = await Promise.all([fetchJson('/api/agents'), fetchJson('/api/handoffs')]);
+    state.agents = agents || [];
+    state.handoffs = handoffs || [];
+    let saved = null;
+    try { saved = localStorage.getItem('blastradius-agent'); } catch { saved = null; }
+    state.agentId = state.agents.some((a) => a.id === saved) ? saved : (state.agents.find((a) => a.canLaunch) || state.agents[0])?.id;
+    els.agentSelect.innerHTML = state.agents.map((a) => `<option value="${esc(a.id)}">${esc(a.label)}${a.canLaunch ? '' : ' (copy and paste)'}</option>`).join('');
+    els.agentSelect.value = state.agentId;
+  } catch (err) {
+    console.error('Failed loading agents:', err);
+  }
+}
+
+function appliedReceipts() {
+  try { return JSON.parse(localStorage.getItem(APPLIED_RECEIPTS_KEY)) || {}; } catch { return {}; }
+}
+
+async function refreshHandoffs() {
+  try {
+    const { handoffs } = await fetchJson('/api/handoffs');
+    const before = JSON.stringify(state.handoffs);
+    state.handoffs = handoffs || [];
+
+    // A receipt that came back clean or fixed ticks that incident's boxes, once per receipt.
+    const applied = appliedReceipts();
+    for (const h of state.handoffs) {
+      if (!h.receipt || applied[h.id] || !['clean', 'fixed'].includes(h.receipt.result)) continue;
+      applied[h.id] = true;
+      const inc = (state.digest?.incidents || []).find((i) => i.id === h.incidentId);
+      for (const act of inc?.lockItDown || []) {
+        const k = actionKey(inc.id, act);
+        if (!state.checkedActions[k]) await toggleAction(k, true);
+      }
+    }
+    try { localStorage.setItem(APPLIED_RECEIPTS_KEY, JSON.stringify(applied)); } catch { /* ticks still apply for this page view */ }
+
+    if (JSON.stringify(state.handoffs) !== before) renderIncidents();
+    const waiting = state.handoffs.some((h) => !h.receipt && Date.now() - Date.parse(h.createdAt) < 2 * 3600000);
+    if (!waiting) stopHandoffPolling();
+  } catch {
+    stopHandoffPolling();
+  }
+}
+
+function startHandoffPolling() {
+  if (!state.handoffTimer) state.handoffTimer = setInterval(refreshHandoffs, 5000);
+}
+
+function stopHandoffPolling() {
+  if (state.handoffTimer) {
+    clearInterval(state.handoffTimer);
+    state.handoffTimer = null;
+  }
+}
+
+async function handOff(incidentId, launch) {
+  const agent = currentAgent();
+  if (!agent) return;
+  const wantLaunch = launch && agent.canLaunch;
+  state.handoffNotes[incidentId] = wantLaunch ? `Opening ${agent.label}...` : 'Preparing the prompt...';
+  renderIncidents();
+  try {
+    const out = await fetchJson('/api/handoff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ incidentId, hours: state.hours, agent: agent.id, launch: wantLaunch })
+    });
+    let copied = false;
+    if (!out.launched) {
+      try { await navigator.clipboard.writeText(out.prompt); copied = true; } catch { copied = false; }
+    }
+    if (out.launched) {
+      state.handoffNotes[incidentId] = `${out.agentLabel} is open in a new terminal window. It checks first and asks you before changing anything.`;
+    } else if (copied) {
+      state.handoffNotes[incidentId] = `Prompt copied. ${out.pasteHint || `Paste it into ${out.agentLabel}.`}${out.launchError ? ` (${out.launchError}.)` : ''}`;
+    } else {
+      state.handoffNotes[incidentId] = `Could not reach the clipboard. The prompt is saved at ${out.promptPath}`;
+    }
+    await refreshHandoffs();
+    startHandoffPolling();
+  } catch (err) {
+    state.handoffNotes[incidentId] = `Could not hand this over: ${err.message}`;
+  }
+  renderIncidents();
+}
+
 // Wire events
+els.agentSelect.addEventListener('change', () => {
+  state.agentId = els.agentSelect.value;
+  try { localStorage.setItem('blastradius-agent', state.agentId); } catch { /* choice lasts for this page view */ }
+  renderIncidents();
+});
+
 els.rolePresetSelect.addEventListener('change', () => {
   const preset = state.presets.find((p) => p.id === els.rolePresetSelect.value);
   if (preset) {
@@ -726,8 +897,9 @@ els.saveProfileBtn.addEventListener('click', async () => {
 });
 
 // Boot
-await Promise.all([loadPresetsAndProfile(), loadState()]);
+await Promise.all([loadPresetsAndProfile(), loadState(), loadAgentsAndHandoffs()]);
 await loadDigest(168);
+if (!STATIC && state.handoffs.some((h) => !h.receipt)) startHandoffPolling();
 
 if (STATIC) {
   // Read-only: nothing here can start a run or change a profile.
@@ -736,5 +908,6 @@ if (STATIC) {
     el.title = 'Disabled in the read-only demo. Run BlastRadius locally to use this.';
   }
   els.demoSnapshotDate.textContent = state.digest ? new Date(state.digest.generatedAt).toISOString().slice(0, 10) : 'unknown date';
+  els.agentPick.classList.add('hidden');
   els.demoBanner.classList.remove('hidden');
 }

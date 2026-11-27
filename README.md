@@ -10,6 +10,26 @@ A short, role-tailored digest of the week's breaches and exploited vulnerabiliti
 2. **Could this happen to me?** One sentence for your role and stack, backed by a lookup against your own inventory where one is possible.
 3. **What should I check?** One or two concrete checks, or nothing.
 
+Then it lets you hand the check to your own AI agent, on your own machine, and shows you the receipt.
+
+## Who this is for
+
+One person. BlastRadius is about your laptop, your browser, your GitHub account and your own projects, the week something relevant happens to someone else.
+
+It is deliberately not an organisation's security platform. It does not scan a cloud estate or a fleet, does not run continuously, has no agents to deploy and no console to administer. It starts from the news ("this is how they got in"), asks whether the same door is open for you, and helps you close it in a few minutes.
+
+## Hand it to your agent
+
+Every incident you might act on has a **Give this to ...** button. It gives the job to an AI agent you already use (Claude Code, Codex or Antigravity) on this machine.
+
+- **BlastRadius never sees a login.** The agent runs as you, with the tools you are already signed in to. No tokens are entered, stored or sent by BlastRadius.
+- **What the agent runs comes from a reviewed playbook**, not from the news. The analysis model can only pick a playbook id from the closed list in `config/playbooks.json` (GitHub tokens, browser extensions, exposed local services, secrets on disk, package exposure, account sign-in review). The incident itself is passed along as clearly marked background, with an instruction to ignore anything in it that reads like a command.
+- **Investigate first, ask before changing.** Playbook steps are read-only, and a repository check rejects a playbook whose investigate steps contain a command that changes state. Fixes are proposed as a list and each one needs your yes. The agent is started in its normal ask-first mode, in a visible terminal.
+- **Receipts.** When it finishes, the agent writes a small JSON file saying what it checked, what it found and what it changed. The dashboard shows it on the incident and ticks the boxes if the check came back clean or fixed. Receipts are treated as untrusted: only known fields are kept, as plain text.
+- **Any agent works.** If your agent has no command-line launcher, the button copies the same prompt for you to paste.
+
+What "local" means here: BlastRadius sends nothing anywhere for a handoff. Your agent talks to its own model provider as it always does, so what it reads while checking (file paths, repository names) goes there under that agent's own terms. The prompt tells it never to print or store secret values. Use an agent backed by a local model if you want nothing to leave the machine at all.
+
 ## What you can and cannot trust
 
 BlastRadius reads feed headlines and teasers, not full articles. It is built so that this limit is visible rather than hidden:
@@ -115,6 +135,8 @@ src/cluster.mjs    lexical clustering, stable incident ids, ranking
 src/analyze.mjs    prompt, batching, validation, quote checking
 src/llm.mjs        model engines (locked-down claude CLI, HTTP APIs)
 src/inventory.mjs  manifest scan and advisory lookup
+src/playbooks.mjs  the closed list of checks an agent can be handed
+src/handoff.mjs    build the agent prompt, open the agent, read receipts
 src/server.mjs     local dashboard API
 src/eval.mjs       scoring against eval/cases.json
 scripts/check.mjs  deterministic repository checks run by CI
