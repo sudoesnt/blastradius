@@ -1,7 +1,7 @@
 {
   "name": "blastradius",
   "version": "0.1.0",
-  "description": "Role-tailored threat and breach digest with root-cause analysis and personal blast-radius triage.",
+  "description": "Role-tailored threat and breach digest: clusters coverage from curated security sources, states what is disclosed versus inferred about each root cause, and checks relevance against your own inventory.",
   "type": "module",
   "bin": {
     "blastradius": "./src/cli.mjs"

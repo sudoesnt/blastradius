@@ -1,42 +1,95 @@
 # BlastRadius
 
-An ultra-succinct, actionable cybersecurity threat & breach TL;DR — tailored to your role.
+A short, role-tailored digest of the week's breaches and exploited vulnerabilities. For each incident it answers three questions:
 
-Instead of a noisy 300-link RSS firehose or a long newsletter, BlastRadius pulls from ~35 vetted Tier-1 & Tier-2 practitioner infosec sources, strips vendor marketing fluff, clusters duplicate coverage, identifies what **realistically** caused each breach, and gives you:
+1. **How did they get in?** One sentence, labelled as *stated by source*, *inferred*, or *not disclosed*.
+2. **Could this happen to me?** One sentence for your role and stack, backed by a lookup against your own inventory where one is possible.
+3. **What should I check?** One or two concrete checks, or nothing.
 
-1. **What actually happened** (1 blunt sentence, zero PR spin)
-2. **Could this happen to me?** (1 line tailored to your role & stack)
-3. **Do this** (1–2 concrete checks, or nothing if it doesn't apply)
+## What you can and cannot trust
 
-## Quick Start
+BlastRadius reads feed headlines and teasers, not full articles. It is built so that this limit is visible rather than hidden:
 
-Requires Node.js >= 22 (zero external npm dependencies, zero `node_modules`).
+- **Root cause is labelled by how it is known.** "Stated by source" requires a verbatim quote, and the quote is checked against the source text in code. If the quote is not there, the claim is downgraded to "inferred". If the cause is not public, the incident is counted as "not disclosed" instead of being given a best guess.
+- **Every incident is analysed**, not a pre-ranked subset. If the model is unavailable, incidents are listed as *not analysed* with their sources. There is no keyword-based stand-in that writes analysis.
+- **Coverage is reported per feed.** A source counts as covering the window only if its feed reaches back to the window start. Feeds that return only their latest few posts are marked *partial* until collection has run long enough (see Scheduling).
+- **Corroboration counts publishers, not feeds.** A reporter's blog and the same reporter's social post are one source. Multi-story roundups never count as corroboration.
+- **Feed text is untrusted input.** The model runs with no tools, no MCP servers and none of your own agent settings, and is told to treat the input as data. See Security.
+- **Scores are published.** `eval/RESULTS.md` holds the latest run against the labelled set in `eval/cases.json`, with its limits stated.
+
+It is a reading aid. It does not replace reading the linked source before you act or brief someone.
+
+## Quick start
+
+Requires Node.js 22 or later. No npm dependencies.
 
 ```bash
-# Run a 7-day (168h), 48h, or 24h digest
-npm run digest
-npm run digest:48h
-npm run digest:24h
-
-# Tailor a CLI run to any role on the fly
-node src/cli.mjs run --hours 48 --role "Staff Platform Engineer" --stack "AWS, K8s, GitHub, Mac"
-
-# Launch the local web dashboard (http://127.0.0.1:3377)
-npm start
-
-# Check live health of all configured sources
-npm run sources
+npm run digest            # 7-day digest (also digest:48h, digest:24h)
+npm start                 # dashboard at http://127.0.0.1:3377
+npm run sources           # per-feed coverage, without storing anything
+npm test                  # unit and server tests
+npm run eval              # score root-cause calls against eval/cases.json
 ```
 
-## Role Tailoring
-Pick a built-in role preset directly in the dashboard bar (`Cybersecurity Pro`, `Field CTO / Security SE`, `CISO / SecOps Lead`, `Software / Platform Engineer`, `IT / Enterprise Admin`, `Tech Executive`) or type **any custom role + 1-line stack** — saved locally to `data/profile.local.json` (gitignored so personal context never enters version control).
+Tailor a run from the command line:
 
-## Curated Sources
-- **Active Exploitation & Ground Truth:** CISA KEV (JSON), CERT/CC, GreyNoise, SANS ISC, GitHub Critical Advisories, Ransomware.live.
-- **Tier-1 Research & IR Labs:** Wiz Cloud Threat Landscape & Research, Google Threat Intelligence Group (GTIG/Mandiant), Google Project Zero, watchTowr Labs, Huntress, Microsoft Threat Intel, Cisco Talos, Palo Alto Unit 42, SentinelLabs, Cloudflare Security, Trail of Bits, Citizen Lab, DoublePulsar.
-- **Investigative Breach Desks:** Krebs on Security, Risky Business News, The Record, BleepingComputer, DataBreaches.net, CyberScoop, SecurityWeek, The Hacker News.
-- **Real-Time HUMINT:** Mastodon (`@GossiTheDog`, `@briankrebs`, `@wdormann`), Bluesky, Hacker News security signal, plus optional X/Twitter API v2 (`X_BEARER_TOKEN`) in `.env`.
+```bash
+node src/cli.mjs run --hours 48 --role "Staff Platform Engineer" --stack "AWS, K8s, GitHub, Mac"
+```
 
-## Analysis Engines
-- **`--engine auto`** (default): uses `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, or `OPENAI_API_KEY` if set; otherwise shells out cleanly to local `claude -p` CLI; falls back to the built-in deterministic analyzer if offline.
-- **`--engine heuristic`**: instant (~4s) zero-LLM local triage.
+## Scheduling (needed for full windows)
+
+Many news feeds only return their latest 5 to 15 posts, which is a day or two. BlastRadius keeps every item it has seen in `data/items.json`, so a 7-day window fills in once collection has been running for 7 days. Schedule the collector hourly:
+
+```bash
+node src/cli.mjs collect      # fetch and store only, no AI, a few seconds
+```
+
+Until then the dashboard says which sources are partial and how far back each one reaches.
+
+## Inventory
+
+Tell BlastRadius where your code lives and it records the package names in your npm, pip and Go manifests:
+
+```bash
+node src/cli.mjs inventory ~/code ~/work
+```
+
+Advisories that name a package are then looked up rather than guessed: a match is shown on the card, and a package you do not have cannot be marked *Act Now*. For CISA KEV entries, add the products you run to `products` in your profile (for example `["Drupal", "Ivanti Connect Secure"]`). The inventory stays in the gitignored `data/` folder; the model only ever sees the match result for a specific advisory.
+
+## Role tailoring
+
+Pick a preset in the dashboard or type any role and one-line stack. It is saved to `data/profile.local.json`, which is gitignored. The role changes the verdict and the "could this happen to me" line, never the stated root cause.
+
+## Sources
+
+`config/sources.json`. Tier 1 is primary material: government catalogs, research labs and incident responders publishing first-hand findings, and investigative reporters. Tier 2 is secondary reporting, advisory databases and social posts. All vendor research labs carry the same weight.
+
+## Analysis engines
+
+- `--engine auto` (default): `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` or `OPENAI_API_KEY` if set, otherwise the local `claude` CLI.
+- `--engine none`: collect, cluster and list only.
+
+Analyses are cached per incident in `data/analysis-cache.json`. An incident whose evidence and profile have not changed is not re-analysed, so verdicts and checklist items stay the same from run to run and a refresh only pays for what is new.
+
+## Security
+
+- The dashboard binds to `127.0.0.1` and rejects requests whose `Host` or `Origin` is not its own, and any state-changing request that is not same-origin JSON. This blocks DNS rebinding and cross-site requests from other pages in your browser.
+- The `claude` CLI is invoked with `--tools "" --strict-mcp-config --setting-sources "" --disable-slash-commands --no-session-persistence`, a replaced system prompt, and the OS temp directory as its working directory.
+- Feed text is escaped in the dashboard, links are limited to `http(s)`, and Markdown export neutralises link, embed and HTML syntax.
+- Profile text is limited to known fields with length caps before it reaches the prompt.
+
+Known limits: the model can still be wrong or be misled by a source; "inferred" causes are opinions; relevance without an inventory match is a judgement about your stated stack.
+
+## Layout
+
+```
+src/ingest.mjs     fetch feeds, filter noise, per-feed coverage
+src/store.mjs      item store, analysis cache, digests, Markdown export
+src/cluster.mjs    lexical clustering, stable incident ids, ranking
+src/analyze.mjs    prompt, batching, validation, quote checking
+src/llm.mjs        model engines (locked-down claude CLI, HTTP APIs)
+src/inventory.mjs  manifest scan and advisory lookup
+src/server.mjs     local dashboard API
+src/eval.mjs       scoring against eval/cases.json
+```
