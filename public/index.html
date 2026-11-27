@@ -83,9 +83,10 @@
       <div id="digestNotice" class="digest-notice hidden" role="status"></div>
 
       <div class="kpi-grid" id="kpiGrid">
-        <button class="kpi active-filter" data-verdict="ALL">
-          <span class="kpi-label">All</span>
-          <span class="kpi-value" id="kpiAll">—</span>
+        <button class="kpi kpi-attention active-filter" data-verdict="ATTENTION">
+          <span class="kpi-label">Needs you</span>
+          <span class="kpi-value" id="kpiAttention">—</span>
+          <span class="kpi-sub">Act Now + Watch</span>
         </button>
         <button class="kpi kpi-red" data-verdict="ACT_NOW">
           <span class="kpi-label">Act Now</span>
@@ -111,6 +112,11 @@
           <span class="kpi-label">CISA KEVs</span>
           <span class="kpi-value" id="kpiKev">—</span>
           <span class="kpi-sub">Exploited in the wild</span>
+        </button>
+        <button class="kpi kpi-muted" data-verdict="ALL">
+          <span class="kpi-label">Everything</span>
+          <span class="kpi-value" id="kpiAll">—</span>
+          <span class="kpi-sub">Including tucked away</span>
         </button>
       </div>
     </section>

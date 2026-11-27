@@ -24,12 +24,15 @@ export function installFakeDom({ baseUrl, staticMode = false, onFetch = null }) 
       closest: () => makeEl('ancestor')
     };
   };
+  // The count tiles double as the verdict filter. The page opens on ATTENTION (Act Now + Watch).
+  const tiles = ['ATTENTION', 'ACT_NOW', 'WATCH_HARDEN', 'CUSTOMER_BRIEF', 'NOT_APPLICABLE', 'KEV_ONLY', 'ALL']
+    .map((v) => Object.assign(makeEl(`tile-${v}`), { dataset: { verdict: v } }));
   const pills = [24, 48, 168].map((h) => Object.assign(makeEl(`pill-${h}`), { dataset: { hours: String(h) } }));
 
   globalThis.document = {
     documentElement: { dataset: staticMode ? { static: '1' } : {} },
     getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); },
-    querySelectorAll: (sel) => (sel.includes('data-hours') ? pills : [])
+    querySelectorAll: (sel) => (sel.includes('data-hours') ? pills : sel.includes('data-verdict') ? tiles : [])
   };
   globalThis.window = { location: {} };
   const store = new Map();
@@ -49,6 +52,8 @@ export function installFakeDom({ baseUrl, staticMode = false, onFetch = null }) 
   return {
     el: (id) => globalThis.document.getElementById(id),
     pills,
+    // Press a count tile, e.g. showVerdict('ALL').
+    showVerdict: (v) => tiles.find((t) => t.dataset.verdict === v).listeners.click[0](),
     html: (id) => globalThis.document.getElementById(id).innerHTML,
     allHtml: () => [...els.values()].map((e) => e.innerHTML).join('\n'),
     // Press a button the page rendered inside a list. The fake DOM has no real elements, so the list hands back one

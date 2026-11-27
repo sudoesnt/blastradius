@@ -229,13 +229,29 @@ test('markdown export is safe to drop into a notes vault', () => {
 test('dashboard renders the digest, escapes feed text, and never shows another window', async () => {
   const dom = installFakeDom({ baseUrl });
   await import('../public/app.js');
-  const list = dom.html('incidentList');
+  const needsYou = first.incidents.filter((i) => i.verdict === 'ACT_NOW' || i.verdict === 'WATCH_HARDEN');
+  assert.ok(needsYou.length > 0 && first.incidents.length > needsYou.length, 'the fixture has both kinds');
+
+  // The page opens on what needs you. Everything else is tucked away behind one visible control.
+  let list = dom.html('incidentList');
+  assert.equal((list.match(/<article/g) || []).length, needsYou.length, 'opens on Act Now and Watch only');
+  assert.equal((list.match(/class="basis /g) || []).length, needsYou.length, 'every full card says how its cause is known');
+  assert.match(list, /data-show-verdict="ALL"/, 'the tucked-away items are one click from view');
+  assert.match(list, new RegExp(`<strong>${first.incidents.length - needsYou.length} more</strong> tucked away`));
+  assert.equal(dom.el('kpiAttention').textContent, needsYou.length);
+  assert.equal(dom.el('kpiAll').textContent, first.incidents.length, 'the Everything tile still counts all of them');
+
+  // Everything: nothing is lost, and the lesser items take one line each until opened.
+  await dom.showVerdict('ALL');
+  list = dom.html('incidentList');
   assert.equal((list.match(/<article/g) || []).length, first.incidents.length);
+  assert.equal((list.match(/incident-compact/g) || []).length, first.incidents.length - needsYou.length);
+  assert.ok(!/tucked away/.test(list));
+
   const rendered = dom.allHtml();
   assert.ok(!/undefined|NaN|\[object Object\]/.test(rendered), 'no unrendered values');
   assert.ok(!rendered.includes('<img src=x'), 'feed and model text is escaped');
   assert.ok(rendered.includes('&lt;img src=x'), 'and still visible as text');
-  assert.equal((list.match(/class="basis /g) || []).length, first.stats.incidentsAnalyzed, 'every analysed card says how its cause is known');
   assert.ok(dom.html('digestNotice').includes('did not cover the whole window'), 'coverage gaps are stated up front');
 
   await dom.pills[0].listeners.click[0]();
