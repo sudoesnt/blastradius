@@ -171,7 +171,7 @@ test('entries for the wrong cluster, bad verdicts and missing text are rejected'
 });
 
 test('inventory miss caps ACT_NOW; inventory hit is reported', () => {
-  const inv = { roots: ['/code'], packages: { npm: ['left-pad'], pip: [], go: [] } };
+  const inv = { schema: 2, complete: true, problems: [], roots: ['/code'], packages: { npm: ['left-pad'], pip: [], go: [], cargo: [] } };
   const c = { ...cluster, packages: [{ ecosystem: 'npm', name: 'ruflo' }] };
   const miss = matchInventory(c, inv, {});
   assert.deepEqual([miss.checked, miss.matches.length], [true, 0]);

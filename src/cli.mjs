@@ -6,7 +6,7 @@ import { ingestAll, loadProfileConfig } from './ingest.mjs';
 import { clusterIncidents, summarizeRansomware } from './cluster.mjs';
 import { analyzeClusters, findSameEventGroups } from './analyze.mjs';
 import { resolveEngine } from './llm.mjs';
-import { scanInventory } from './inventory.mjs';
+import { scanInventory, inventoryIsComplete, ECOSYSTEMS } from './inventory.mjs';
 import { loadPlaybooks } from './playbooks.mjs';
 import {
   DATA_DIR, INVENTORY_PATH, saveDigest, loadLatestDigest, renderMarkdownDigest,
@@ -91,7 +91,12 @@ export async function runPipeline({
     fallbackReason: [analyzed.fallbackReason, mergeNote].filter(Boolean).join('; ') || null,
     executiveSummary: analyzed.executiveSummary,
     inventory: inventory
-      ? { scannedAt: inventory.scannedAt, roots: inventory.roots.length, packages: Object.values(inventory.packages).reduce((a, l) => a + l.length, 0) }
+      ? {
+          scannedAt: inventory.scannedAt, roots: inventory.roots.length,
+          packages: Object.values(inventory.packages).reduce((a, l) => a + l.length, 0),
+          complete: inventoryIsComplete(inventory),
+          problems: inventoryIsComplete(inventory) ? [] : (inventory.problems?.length ? inventory.problems : ['scanned by an older version that could stop early without saying so; run the inventory command again'])
+        }
       : null,
     stats: {
       sourcesTotal: raw.sourceHealth.length,
@@ -196,15 +201,31 @@ async function main() {
     printSourceHealth(raw.sourceHealth, hours);
   } else if (cmd === 'inventory') {
     const roots = args._.slice(1);
+    const describe = (inv) => {
+      const lines = [
+        `${inv.manifestCount} manifests under ${inv.roots.join(', ')}`,
+        `  ${ECOSYSTEMS.map((e) => `${e} ${(inv.packages[e] || []).length}`).join(' | ')}`
+      ];
+      if (inventoryIsComplete(inv)) {
+        lines.push('  Scan complete: a package that is not listed here is not in these folders.');
+      } else {
+        lines.push('  SCAN INCOMPLETE. A match is still a match, but "not found" will NOT be used to lower a verdict:');
+        for (const p of inv.problems?.length ? inv.problems : ['scanned by an older version that could stop early without saying so; scan again']) lines.push(`    - ${p}`);
+        for (const [label, list] of Object.entries(inv.gaps || {})) {
+          if (Array.isArray(list) && list.length) lines.push(`    ${label}: ${list.slice(0, 5).join('; ')}${list.length > 5 ? '; ...' : ''}`);
+        }
+      }
+      return lines.join('\n');
+    };
     if (!roots.length) {
       const inv = await loadInventory();
       if (!inv) console.log('No inventory yet. Usage: node src/cli.mjs inventory <folder> [<folder> ...]');
-      else console.log(`Inventory from ${inv.scannedAt}: ${inv.manifestCount} manifests under ${inv.roots.join(', ')}\n  npm ${inv.packages.npm.length} | pip ${inv.packages.pip.length} | go ${inv.packages.go.length}`);
+      else console.log(`Inventory from ${inv.scannedAt}:\n${describe(inv)}`);
       return;
     }
     const inv = await scanInventory(roots);
     await writeJsonAtomic(INVENTORY_PATH, inv);
-    console.log(`Scanned ${inv.manifestCount} manifests under ${inv.roots.join(', ')}\n  npm ${inv.packages.npm.length} | pip ${inv.packages.pip.length} | go ${inv.packages.go.length}\nSaved to ${INVENTORY_PATH} (stays on this machine).`);
+    console.log(`Scanned ${describe(inv)}\nSaved to ${INVENTORY_PATH} (stays on this machine).`);
   } else if (cmd === 'eval') {
     const { runEval } = await import('./eval.mjs');
     await runEval({ engine: String(args.engine || 'auto'), write: Boolean(args.write) });

@@ -306,7 +306,7 @@ export function renderMarkdownDigest(digest) {
       if (inc.evidenceQuote) lines.push(`- **Source says:** “${mdText(inc.evidenceQuote)}”`);
       lines.push(`- **Could this happen to me?** ${mdText(inc.couldThisHappenToMe)}`);
       if (inc.inventory?.checked) {
-        lines.push(`- **Inventory:** ${inc.inventory.matches.length ? `MATCH — ${mdText(inc.inventory.matches.join(', '))}` : 'no match in scanned inventory'}`);
+        lines.push(`- **Inventory:** ${inc.inventory.matches.length ? `MATCH — ${mdText(inc.inventory.matches.join(', '))}` : inc.inventory.conclusive === false ? 'not found, but the scan was incomplete so it is not ruled out' : 'no match in scanned inventory'}`);
       }
       if (inc.lockItDown?.length) lines.push(`- **Do:** ${inc.lockItDown.map(mdText).join(' · ')}`);
       lines.push(`- **Sources (${inc.corroborationCount}):** ${srcLinks}`, '');
