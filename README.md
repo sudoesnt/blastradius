@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/sudoesnt/blastradius/actions/workflows/ci.yml/badge.svg)](https://github.com/sudoesnt/blastradius/actions/workflows/ci.yml)
 
+**[Try the read-only demo](https://sudoesnt.github.io/blastradius/)** — a recent snapshot analysed for a generic cloud-security role. Run it locally to tailor it to yours.
+
 A short, role-tailored digest of the week's breaches and exploited vulnerabilities. For each incident it answers three questions:
 
 1. **How did they get in?** One sentence, labelled as *stated by source*, *inferred*, or *not disclosed*.
@@ -98,6 +100,12 @@ CI publishes the digest that end-to-end run produced as the run summary and as a
 
 The eval (`npm run eval`) calls a real model, so it is not a merge gate. It is run by hand when the prompt or validation changes and its result is committed to `eval/RESULTS.md`.
 
+## Demo site
+
+The demo at https://sudoesnt.github.io/blastradius/ is the same dashboard served as plain files with a committed snapshot (`demo/digest-*.json`). It has no server behind it: refresh and role tailoring are disabled, and checklist ticks stay in your browser.
+
+To update it, run `npm run demo:snapshot` on your own machine and open a pull request with the changed `demo/` files. The snapshot is generated in a throwaway data folder with the generic default profile, and both the build and `npm run check` refuse a snapshot made with a personal profile or containing inventory results. The site redeploys when the pull request merges.
+
 ## Layout
 
 ```
@@ -110,6 +118,7 @@ src/inventory.mjs  manifest scan and advisory lookup
 src/server.mjs     local dashboard API
 src/eval.mjs       scoring against eval/cases.json
 scripts/check.mjs  deterministic repository checks run by CI
+scripts/build-demo.mjs, scripts/demo-snapshot.mjs  build and refresh the read-only demo site
 ```
 
 ## License
