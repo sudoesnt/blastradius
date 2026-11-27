@@ -615,3 +615,30 @@ a:hover { text-decoration: underline; }
 .demo-banner-inner { max-width: 1400px; margin: 0 auto; padding: 9px 20px; }
 .demo-banner a { color: var(--cyan); font-weight: 600; }
 button:disabled, select:disabled, input:disabled, textarea:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* --- hand an incident to your own agent --- */
+.agent-pick { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.agent-pick.hidden { display: none; }
+.handoff { display: flex; flex-direction: column; gap: 6px; }
+.handoff-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.handoff-btn {
+  background: var(--green-bg); border: 1px solid rgba(52, 211, 153, 0.45); color: var(--green);
+  border-radius: 7px; padding: 5px 12px; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.handoff-btn:hover:not(:disabled) { background: rgba(52, 211, 153, 0.22); }
+.handoff-copy {
+  background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.handoff-copy:hover { color: var(--text); border-color: var(--border-strong); }
+.handoff-scope, .handoff-status { font-size: 11.5px; color: var(--text-muted); }
+.handoff-status { color: var(--text-dim); }
+.receipt { border-left: 3px solid var(--border-strong); padding: 4px 0 4px 10px; font-size: 12.5px; color: #cbd5e1; }
+.receipt-clean, .receipt-fixed { border-left-color: var(--green); }
+.receipt-findings { border-left-color: var(--red); }
+.receipt-needs-you { border-left-color: var(--amber); }
+.receipt-result { font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 6px; }
+.receipt-clean .receipt-result, .receipt-fixed .receipt-result { color: var(--green); }
+.receipt-findings .receipt-result { color: var(--red); }
+.receipt-needs-you .receipt-result { color: var(--amber); }
+.receipt-items { margin: 5px 0 0; padding-left: 18px; display: grid; gap: 2px; }
