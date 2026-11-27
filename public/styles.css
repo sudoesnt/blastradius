@@ -590,3 +590,21 @@ a:hover { text-decoration: underline; }
   border-radius: 12px;
   color: var(--text-dim);
 }
+
+/* --- trust signals --- */
+.digest-notice { margin: 10px 0 2px; padding: 9px 12px; border-radius: 8px; font-size: 12.5px; line-height: 1.45;
+  background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); display: grid; gap: 3px; }
+.digest-notice.hidden { display: none; }
+.basis { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; font-family: var(--font-mono);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; vertical-align: 1px; cursor: help; white-space: nowrap; }
+.basis-disclosed { background: var(--green-bg); color: var(--green); }
+.basis-inferred { background: var(--amber-bg); color: var(--amber); }
+.basis-unknown { background: var(--surface-2); color: var(--text-dim); }
+.evidence-quote { border-left: 2px solid var(--border-strong); padding-left: 10px; font-style: italic; }
+.inv-hit { color: var(--red); font-weight: 700; }
+.inv-miss { color: var(--text-dim); }
+.chip-new { color: var(--green); }
+.verdict-UNANALYZED { opacity: 0.82; }
+.verdict-UNANALYZED .sources-row { margin-top: 8px; }
+.source-note { font-size: 11px; color: var(--text-muted); margin: 2px 0 0 14px; }
+.dot-off { background: var(--border-strong); }

@@ -25,8 +25,8 @@
         </div>
 
         <select id="engineSelect" class="select-input" title="Analysis engine">
-          <option value="auto">Deep AI (Auto / Claude CLI)</option>
-          <option value="heuristic">Fast Local Triage</option>
+          <option value="auto">AI analysis</option>
+          <option value="none">No AI (collect and list only)</option>
         </select>
 
         <button id="refreshBtn" class="btn btn-primary">Refresh Digest</button>
@@ -73,6 +73,7 @@
         <div class="briefing-meta" id="briefingMeta"></div>
       </div>
       <p id="executiveSummary" class="exec-summary"></p>
+      <div id="digestNotice" class="digest-notice hidden" role="status"></div>
 
       <div class="kpi-grid" id="kpiGrid">
         <button class="kpi active-filter" data-verdict="ALL">
@@ -102,7 +103,7 @@
         <button class="kpi kpi-kev" data-verdict="KEV_ONLY">
           <span class="kpi-label">CISA KEVs</span>
           <span class="kpi-value" id="kpiKev">—</span>
-          <span class="kpi-sub">Active in-the-wild</span>
+          <span class="kpi-sub">Exploited in the wild</span>
         </button>
       </div>
     </section>
@@ -138,10 +139,10 @@
         <!-- Realistic Root-Cause Breakdown -->
         <div class="panel">
           <div class="panel-head">
-            <h3>Real Root Causes</h3>
+            <h3>How They Got In</h3>
             <span class="mono-dim" id="rootCauseTotal"></span>
           </div>
-          <p class="panel-sub">How these incidents actually happened.</p>
+          <p class="panel-sub">Initial-access cause. “Not disclosed” is counted, not guessed.</p>
           <div id="rootCauseBars" class="bars"></div>
         </div>
 
@@ -151,7 +152,7 @@
             <h3>Ransomware Pulse</h3>
             <span class="badge badge-muted" id="ransomTotal">0 victims</span>
           </div>
-          <p class="panel-sub">Live extortion leak-site disclosures (Ransomware.live).</p>
+          <p class="panel-sub">Leak-site posts (Ransomware.live). Claims by the groups, not confirmed breaches.</p>
           <div id="ransomGroups" class="tag-cloud"></div>
           <div id="ransomRecent" class="ransom-list"></div>
         </div>
@@ -167,12 +168,12 @@
       <button id="closeDrawerBtn" class="btn btn-ghost">Close</button>
     </div>
     <div class="drawer-tabs">
-      <button class="tab-btn active" data-tab="sourcesTab">Source Health</button>
+      <button class="tab-btn active" data-tab="sourcesTab">Source Coverage</button>
       <button class="tab-btn" data-tab="profileTab">Profile JSON</button>
     </div>
 
     <div id="sourcesTab" class="drawer-body">
-      <p class="panel-sub">Curated Tier-1 research labs, exploitation feeds, and practitioner HUMINT. Set <code>X_BEARER_TOKEN</code> in <code>.env</code> to enable live X/Twitter search.</p>
+      <p class="panel-sub">A source counts as covering the window only if its feed reaches back to the window start. Feeds that return just their latest few posts fill in as collection runs over time (<code>npm run collect</code> on a schedule).</p>
       <div id="sourceHealthTable" class="source-list"></div>
     </div>
 

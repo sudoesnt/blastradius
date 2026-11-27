@@ -19,6 +19,7 @@ const els = {
   applyRoleBtn: document.getElementById('applyRoleBtn'),
   briefingTitle: document.getElementById('briefingTitle'),
   briefingMeta: document.getElementById('briefingMeta'),
+  digestNotice: document.getElementById('digestNotice'),
   executiveSummary: document.getElementById('executiveSummary'),
   kpiAll: document.getElementById('kpiAll'),
   kpiActNow: document.getElementById('kpiActNow'),
@@ -57,8 +58,30 @@ function esc(str = '') {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
+
+// Links come from feeds. Only http(s) may become an href.
+function safeHref(u) {
+  return /^https?:\/\//i.test(String(u || '')) ? String(u) : '#';
+}
+
+const BASIS = {
+  DISCLOSED: { label: 'stated by source', cls: 'basis-disclosed', tip: 'The source text states this cause. The supporting quote was checked against it.' },
+  INFERRED: { label: 'inferred', cls: 'basis-inferred', tip: 'The sources do not state the cause. This is the model reasoning from the pattern.' },
+  UNKNOWN: { label: 'not disclosed', cls: 'basis-unknown', tip: 'The cause is not public.' }
+};
+
+const COVERAGE = {
+  full: { dot: 'dot-ok', label: 'full window' },
+  partial: { dot: 'dot-warn', label: 'partial' },
+  stale: { dot: 'dot-err', label: 'stale feed' },
+  empty: { dot: 'dot-err', label: 'no items' },
+  error: { dot: 'dot-err', label: 'error' },
+  unconfigured: { dot: 'dot-off', label: 'not configured' },
+  disabled: { dot: 'dot-off', label: 'disabled' }
+};
 
 function fmtRelative(iso) {
   if (!iso) return '';
@@ -78,6 +101,7 @@ function verdictMeta(v) {
     case 'ACT_NOW': return { label: 'ACT NOW', cls: 'badge-red' };
     case 'WATCH_HARDEN': return { label: 'WATCH', cls: 'badge-amber' };
     case 'CUSTOMER_BRIEF': return { label: briefLabel().toUpperCase(), cls: 'badge-cyan' };
+    case 'UNANALYZED': return { label: 'NOT ANALYSED', cls: 'badge-muted' };
     default: return { label: 'SKIP', cls: 'badge-muted' };
   }
 }
@@ -95,7 +119,7 @@ function actionKey(incidentId, text) {
 
 async function fetchJson(url, opts) {
   const res = await fetch(url, opts);
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
@@ -149,16 +173,28 @@ async function toggleAction(key, checked) {
 }
 
 async function loadDigest(hours = state.hours) {
+  state.hours = hours;
   try {
     const digest = await fetchJson(`/api/digest?hours=${hours}`);
     state.digest = digest;
-    state.hours = digest.hours || hours;
     syncWindowPills();
     renderAll();
   } catch (err) {
-    els.briefingTitle.textContent = 'No digest generated yet';
+    // No digest for this window: say so and stay on the window the user picked. Never show another window's data.
+    state.digest = null;
+    syncWindowPills();
+    const label = hours === 168 ? '7-day' : `${hours}h`;
+    els.briefingTitle.textContent = `No ${label} digest yet`;
     els.executiveSummary.textContent = err.message;
-    els.incidentList.innerHTML = `<div class="empty-state">Pick your role above and click <strong>Refresh Digest</strong> to build your threat TL;DR.</div>`;
+    els.briefingMeta.innerHTML = '';
+    els.digestNotice.classList.add('hidden');
+    for (const el of [els.kpiAll, els.kpiActNow, els.kpiWatch, els.kpiCustomer, els.kpiNA, els.kpiKev]) el.textContent = '—';
+    els.bucketChips.innerHTML = '';
+    els.lockdownList.innerHTML = '';
+    els.checklistProgress.textContent = '0/0';
+    els.rootCauseBars.innerHTML = '';
+    els.rootCauseTotal.textContent = '';
+    els.incidentList.innerHTML = `<div class="empty-state">Click <strong>Refresh Digest</strong> to build the ${esc(label)} digest.</div>`;
   }
 }
 
@@ -173,19 +209,32 @@ function renderAll() {
   if (!d) return;
 
   const windowLabel = d.hours === 168 ? 'Last 7 Days' : `Last ${d.hours}h`;
-  const roleName = d.roleTitle || d.persona || 'Security Pro';
+  const roleName = d.roleTitle || 'Security Pro';
   els.briefingTitle.textContent = `${windowLabel} · Tailored for ${roleName}`;
   els.executiveSummary.textContent = d.executiveSummary || '';
 
+  const st = d.stats;
   els.briefingMeta.innerHTML = [
     `<span class="meta-chip">${esc(fmtRelative(d.generatedAt))}</span>`,
-    `<span class="meta-chip">${esc(d.analysisEngine)}</span>`,
-    `<span class="meta-chip">${d.stats.sourcesOk}/${d.stats.sourcesTotal} feeds live</span>`,
-    `<span class="meta-chip">${d.stats.rawItemsKept} signals → ${d.stats.incidentsAnalyzed} items</span>`
+    `<span class="meta-chip">engine: ${esc(d.analysisEngine)}</span>`,
+    `<span class="meta-chip" title="Sources whose feed reaches back to the start of this window">${Number(st.sourcesFullCoverage)}/${Number(st.sourcesEnabled)} sources cover full window</span>`,
+    `<span class="meta-chip">${Number(st.rawItemsKept)} items → ${Number(st.clustersTotal)} incidents</span>`,
+    `<span class="meta-chip" title="How the root cause is known">cause: ${Number(st.disclosed)} stated · ${Number(st.inferred)} inferred · ${Number(st.unknownCause)} not disclosed</span>`,
+    st.newSinceLast ? `<span class="meta-chip chip-new">${Number(st.newSinceLast)} new since last run</span>` : '',
+    d.inventory ? `<span class="meta-chip" title="Package manifests scanned on this machine">inventory: ${Number(d.inventory.packages)} packages</span>` : ''
   ].join('');
 
+  // Anything that limits how far this digest can be trusted is said up front, not buried in a drawer.
+  const notices = [];
+  if (st.unanalyzed) notices.push(`${Number(st.unanalyzed)} of ${Number(st.clustersTotal)} incidents were not analysed${d.fallbackReason ? ` (${d.fallbackReason})` : ''}. They are listed with sources only.`);
+  else if (d.fallbackReason) notices.push(d.fallbackReason);
+  const gaps = (d.sourceHealth || []).filter((s) => ['partial', 'stale', 'empty', 'error'].includes(s.coverage));
+  if (gaps.length) notices.push(`${gaps.length} source${gaps.length === 1 ? '' : 's'} did not cover the whole window (${gaps.slice(0, 4).map((s) => s.name).join(', ')}${gaps.length > 4 ? ', …' : ''}). Open Sources for details.`);
+  els.digestNotice.classList.toggle('hidden', !notices.length);
+  els.digestNotice.innerHTML = notices.map((n) => `<div>${esc(n)}</div>`).join('');
+
   els.kpiBriefLabel.textContent = briefLabel();
-  els.kpiAll.textContent = d.stats.incidentsAnalyzed ?? 0;
+  els.kpiAll.textContent = d.incidents?.length ?? 0;
   els.kpiActNow.textContent = d.stats.actNow ?? 0;
   els.kpiWatch.textContent = d.stats.watchHarden ?? 0;
   els.kpiCustomer.textContent = d.stats.customerBrief ?? 0;
@@ -280,12 +329,37 @@ function renderIncidents() {
       : '';
 
     const sourcesHtml = (inc.sources || []).map((s) => `
-      <a class="source-link" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">
-        <span class="mono-dim">T${s.tier}</span>
+      <a class="source-link" href="${esc(safeHref(s.url))}" target="_blank" rel="noopener noreferrer">
+        <span class="mono-dim">T${Number(s.tier)}</span>
         <span>${esc(s.name)}</span>
       </a>`).join('');
 
     const angleText = inc.roleAngle || inc.customerAngle || '';
+    const newBadge = inc.isNew ? `<span class="badge badge-green">NEW</span>` : '';
+    const srcCount = `${Number(inc.corroborationCount)} independent source${inc.corroborationCount === 1 ? '' : 's'}`;
+
+    // Not analysed: show what we have (headline and sources) and nothing we do not.
+    if (inc.verdict === 'UNANALYZED') {
+      return `
+      <article class="incident-card verdict-UNANALYZED" data-id="${esc(inc.id)}">
+        <div class="inc-top">
+          <div class="badges"><span class="badge ${vm.cls}">${esc(vm.label)}</span>${kevBadge}${cveBadges}${newBadge}</div>
+          <span class="mono-dim">${esc(srcCount)} · ${esc(fmtRelative(inc.latestAt))}</span>
+        </div>
+        <h3 class="inc-title">${esc(inc.title)}</h3>
+        <div class="sources-row">${sourcesHtml}</div>
+      </article>`;
+    }
+
+    const basis = BASIS[inc.rootCauseBasis] || BASIS.INFERRED;
+    const inv = inc.inventory?.checked
+      ? `<div class="tldr-row">
+           <span class="tldr-k">Inventory</span>
+           <span class="${inc.inventory.matches.length ? 'inv-hit' : 'inv-miss'}">${inc.inventory.matches.length
+             ? `Found on this machine: ${esc(inc.inventory.matches.join(', '))}`
+             : `Not found in ${esc(inc.inventory.basis || 'your inventory')}`}</span>
+         </div>`
+      : '';
 
     return `
       <article class="incident-card verdict-${esc(inc.verdict)}" data-id="${esc(inc.id)}">
@@ -296,8 +370,9 @@ function renderIncidents() {
             ${kevBadge}
             <span class="badge badge-muted">${esc(inc.rootCauseBucket)}</span>
             ${cveBadges}
+            ${newBadge}
           </div>
-          <span class="mono-dim">${inc.corroborationCount} src · ${esc(fmtRelative(inc.latestAt))}</span>
+          <span class="mono-dim">${esc(srcCount)} · ${esc(fmtRelative(inc.latestAt))}</span>
         </div>
 
         <h3 class="inc-title">${esc(inc.title)}</h3>
@@ -305,12 +380,13 @@ function renderIncidents() {
         <div class="tldr-lines">
           <div class="tldr-row">
             <span class="tldr-k">Happened</span>
-            <span class="tldr-happened">${esc(happenedLine)}</span>
+            <span class="tldr-happened">${esc(happenedLine)} <span class="basis ${basis.cls}" title="${esc(basis.tip)}">${esc(basis.label)}</span></span>
           </div>
           <div class="tldr-row tldr-row-me">
             <span class="tldr-k">Hit me?</span>
             <span class="tldr-me">${esc(inc.couldThisHappenToMe)}</span>
           </div>
+          ${inv}
           ${inlineActionsHtml}
         </div>
 
@@ -320,6 +396,16 @@ function renderIncidents() {
         </div>
 
         <div class="inc-details ${expanded ? '' : 'hidden'}">
+          ${inc.evidenceQuote ? `
+          <div class="detail-block">
+            <h4>What the source says</h4>
+            <p class="evidence-quote">“${esc(inc.evidenceQuote)}”</p>
+          </div>` : ''}
+          ${(inc.validationNotes || []).length ? `
+          <div class="detail-block">
+            <h4>Automatic corrections</h4>
+            <p>${esc(inc.validationNotes.join('; '))}</p>
+          </div>` : ''}
           ${inc.realisticRootCause && inc.realisticRootCause !== happenedLine ? `
           <div class="detail-block">
             <h4>Full Root Cause</h4>
@@ -415,7 +501,8 @@ function renderRootCauseBars() {
 function renderRansomware() {
   const rw = state.digest?.ransomware;
   if (!rw) return;
-  els.ransomTotal.textContent = `${rw.totalVictims || 0} victims`;
+  els.ransomTotal.textContent = `${rw.totalVictims || 0}${rw.capped ? '+' : ''} victims`;
+  els.ransomTotal.title = rw.capped ? 'The feed only returns the most recent posts, so this window is not fully counted yet.' : '';
   els.ransomGroups.innerHTML = (rw.topGroups || []).slice(0, 8)
     .map((g) => `<span class="badge badge-muted">${esc(g.group)} · ${g.count}</span>`)
     .join('');
@@ -433,16 +520,17 @@ function renderRansomware() {
 function renderSourceHealth() {
   const sources = state.digest?.sourceHealth || [];
   els.sourceHealthTable.innerHTML = sources.map((s) => {
-    const dotCls = s.status === 'ok' ? 'dot-ok' : (s.status === 'unconfigured' || s.status === 'disabled' ? 'dot-warn' : 'dot-err');
-    const detail = s.status === 'ok' ? `${s.keptCount} kept (${s.durationMs}ms)` : (s.error || s.status);
+    const cov = COVERAGE[s.coverage] || COVERAGE.error;
+    const counts = s.status === 'ok' ? `${Number(s.inStoreWindowCount ?? s.keptCount)} in window` : '';
     return `
       <div class="source-row">
         <div>
-          <span class="dot ${dotCls}"></span>
+          <span class="dot ${cov.dot}"></span>
           <strong>${esc(s.name)}</strong>
-          <span class="mono-dim"> · T${s.tier} · ${esc(s.category)}</span>
+          <span class="mono-dim"> · T${Number(s.tier)} · ${esc(s.category)}</span>
+          ${s.coverageNote ? `<div class="source-note">${esc(s.coverageNote)}</div>` : ''}
         </div>
-        <span class="mono-dim">${esc(detail)}</span>
+        <span class="mono-dim">${esc(cov.label)}${counts ? ` · ${esc(counts)}` : ''}</span>
       </div>`;
   }).join('');
 }
