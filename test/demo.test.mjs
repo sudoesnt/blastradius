@@ -119,7 +119,13 @@ test('the dashboard runs read-only against plain files', async () => {
 
 test('the demo ships a ready-made agent prompt for each actionable incident, with no receipt to write', async () => {
   const prompts = JSON.parse(await fs.readFile(path.join(outDir, 'snapshot', 'handoffs-168h.json'), 'utf8'));
-  assert.deepEqual(Object.keys(prompts), ['inc-0000000000']);
+  assert.deepEqual(Object.keys(prompts).filter((k) => k.startsWith('inc-')), ['inc-0000000000']);
+  // Every reviewed playbook is also offered as an on-demand checkup.
+  const checkups = Object.keys(prompts).filter((k) => k.startsWith('checkup-'));
+  assert.ok(checkups.length >= 8 && checkups.includes('checkup-agent-config-audit'));
+  assert.ok(!checkups.includes('checkup-package-exposure'), 'a playbook that needs an incident is not a checkup');
+  assert.ok(prompts['checkup-cloud-cli-credentials'].includes('Routine check') && !prompts['checkup-cloud-cli-credentials'].includes('## Receipt'));
+  await fs.access(path.join(outDir, 'snapshot', 'playbooks.json'));
   const prompt = prompts['inc-0000000000'];
   assert.ok(prompt.includes('gh auth status'), 'built from the reviewed playbook');
   assert.ok(prompt.includes('Make a change only after the person says yes'));

@@ -135,6 +135,21 @@ Use "clean" if nothing needed attention, "findings" if something did and is not 
 }
 
 
+/** The stand-in "incident" for running one playbook on demand, with no news story behind it. */
+export function checkupIncident(playbook) {
+  return {
+    id: `checkup-${playbook.id}`,
+    title: `Routine check: ${playbook.title}`,
+    verdict: 'WATCH_HARDEN',
+    rootCauseBasis: 'not applicable',
+    tldrRootCause: 'No specific incident. The person asked for this check as routine hygiene.',
+    couldThisHappenToMe: 'This is a routine check, not a response to a particular breach.',
+    lockItDown: [],
+    playbooks: [playbook.id],
+    cves: [], packages: [], sources: []
+  };
+}
+
 const RESULTS = ['clean', 'findings', 'fixed', 'needs-you'];
 
 // Something the person can open or type into a browser: a web link or a browser-internal page.

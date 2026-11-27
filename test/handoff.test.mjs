@@ -223,3 +223,33 @@ test('without a receipt path the prompt asks for a spoken summary instead of a f
   assert.ok(prompt.includes('Finish with a short plain summary'));
   assert.ok(prompt.includes('gh auth status'));
 });
+
+test('the agent-config, cloud-credential and editor-extension playbooks build into prompts', () => {
+  for (const [id, mustSay] of [
+    ['agent-config-audit', 'Do not start any agent or MCP server'],
+    ['cloud-cli-credentials', "Do not enumerate an employer's organisation"],
+    ['editor-extensions', 'extensions.json']
+  ]) {
+    assert.ok(playbooks.some((p) => p.id === id), `${id} is shipped`);
+    const prompt = buildHandoffPrompt({ id: 'h-000000000002', incident: { ...incident, playbooks: [id] }, playbooks, agentId: 'claude', receiptPath: '/r.json' });
+    assert.ok(prompt.includes(mustSay), `${id} carries its scope rule`);
+    assert.ok(prompt.includes('Never print'), 'and the no-secrets rule');
+  }
+});
+
+test('a checkup runs one playbook on demand through the same guarded route', async () => {
+  const ok = await post('/api/handoff', { incidentId: 'checkup-agent-config-audit', agent: 'antigravity', launch: false });
+  assert.equal(ok.status, 201);
+  assert.ok(ok.json.prompt.includes('Routine check: AI coding agents'));
+  assert.ok(ok.json.prompt.includes('Do not start any agent or MCP server'));
+  assert.ok(ok.json.prompt.includes('## Receipt'), 'a local checkup reports back like any other handoff');
+
+  assert.equal((await post('/api/handoff', { incidentId: 'checkup-not-a-playbook', agent: 'claude' })).status, 404);
+  assert.equal((await post('/api/handoff', { incidentId: 'checkup-package-exposure', agent: 'claude' })).status, 404, 'needs an incident to name the package');
+  assert.equal((await post('/api/handoff', { incidentId: 'checkup-../../etc', agent: 'claude' })).status, 404);
+  assert.equal((await post('/api/handoff', { incidentId: 'checkup-agent-config-audit', agent: 'claude' }, { origin: 'http://evil.example' })).status, 403);
+
+  const listed = (await listHandoffs()).find((h) => h.id === ok.json.id);
+  assert.equal(listed.incidentId, 'checkup-agent-config-audit');
+  assert.deepEqual(listed.playbooks, ['agent-config-audit']);
+});

@@ -34,7 +34,7 @@ export function forPublication(digest) {
 
 export async function buildDemo(outDir, { demoDir = path.join(ROOT, 'demo') } = {}) {
   const { renderMarkdownDigest } = await import(pathToFileURL(path.join(ROOT, 'src', 'store.mjs')).href);
-  const { buildHandoffPrompt } = await import(pathToFileURL(path.join(ROOT, 'src', 'handoff.mjs')).href);
+  const { buildHandoffPrompt, checkupIncident } = await import(pathToFileURL(path.join(ROOT, 'src', 'handoff.mjs')).href);
   const { loadPlaybooks } = await import(pathToFileURL(path.join(ROOT, 'src', 'playbooks.mjs')).href);
   const playbooks = await loadPlaybooks();
   const defaultProfile = JSON.parse(await fs.readFile(path.join(ROOT, 'config', 'profile.json'), 'utf8'));
@@ -71,12 +71,17 @@ export async function buildDemo(outDir, { demoDir = path.join(ROOT, 'demo') } = 
     for (const inc of clean.incidents.filter((i) => i.verdict === 'ACT_NOW' || i.verdict === 'WATCH_HARDEN')) {
       prompts[inc.id] = buildHandoffPrompt({ id: `demo-${inc.id}`, incident: inc, playbooks, agentId: 'your-agent', receiptPath: null });
     }
+    for (const p of playbooks.filter((b) => !b.needsIncident)) {
+      const checkup = checkupIncident(p);
+      prompts[checkup.id] = buildHandoffPrompt({ id: `demo-${checkup.id}`, incident: checkup, playbooks, agentId: 'your-agent', receiptPath: null });
+    }
     await fs.writeFile(path.join(snapshotDir, `handoffs-${hours}h.json`), JSON.stringify(prompts));
     built.push(hours);
   }
   if (!built.includes(168)) throw new Error('demo/digest-168h.json is missing; the dashboard opens on the 7-day window');
 
   await fs.copyFile(path.join(ROOT, 'config', 'presets.json'), path.join(snapshotDir, 'presets.json'));
+  await fs.writeFile(path.join(snapshotDir, 'playbooks.json'), JSON.stringify({ playbooks: playbooks.filter((b) => !b.needsIncident).map((p) => ({ id: p.id, title: p.title, when: p.when })) }));
   await fs.writeFile(path.join(snapshotDir, 'profile.json'), JSON.stringify(defaultProfile, null, 2));
   // GitHub Pages: serve files as they are, no Jekyll processing.
   await fs.writeFile(path.join(outDir, '.nojekyll'), '');
