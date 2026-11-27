@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BlastRadius — Actionable Security TL;DR</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">BR</div>
+        <div>
+          <h1>BlastRadius</h1>
+          <div class="subtitle">Actionable Threat &amp; Breach TL;DR</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="window-pills" role="group" aria-label="Timeframe">
+          <button class="pill" data-hours="24">24h</button>
+          <button class="pill" data-hours="48">48h</button>
+          <button class="pill active" data-hours="168">7d</button>
+        </div>
+
+        <select id="engineSelect" class="select-input" title="Analysis engine">
+          <option value="auto">Deep AI (Auto / Claude CLI)</option>
+          <option value="heuristic">Fast Local Triage</option>
+        </select>
+
+        <button id="refreshBtn" class="btn btn-primary">Refresh Digest</button>
+        <button id="exportBtn" class="btn btn-ghost">Export .md</button>
+        <button id="configBtn" class="btn btn-ghost">Sources</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="jobBanner" class="job-banner hidden">
+    <div class="job-banner-inner">
+      <span class="spinner"></span>
+      <span id="jobLogText">Refreshing threat feeds...</span>
+    </div>
+  </div>
+
+  <main class="container">
+    <!-- Role Tailor Bar -->
+    <section class="role-bar">
+      <div class="role-field role-preset-wrap">
+        <label for="rolePresetSelect">Preset Role</label>
+        <select id="rolePresetSelect" class="select-input"></select>
+      </div>
+      <div class="role-field role-title-wrap">
+        <label for="roleTitleInput">Your Role (customizable)</label>
+        <input id="roleTitleInput" type="text" class="text-input" placeholder="e.g. Field CTO, Cloud Security Engineer, Staff SRE, CISO..." />
+      </div>
+      <div class="role-field role-stack-wrap">
+        <label for="roleStackInput">Stack / Context (optional)</label>
+        <input id="roleStackInput" type="text" class="text-input" placeholder="e.g. GCP/AWS, K8s, GitHub, Google Workspace, Mac/Win, local AI agents" />
+      </div>
+      <div class="role-actions">
+        <button id="applyRoleBtn" class="btn btn-secondary">Tailor &amp; Refresh</button>
+      </div>
+    </section>
+
+    <!-- Executive Briefing Strip -->
+    <section class="briefing-card">
+      <div class="briefing-head">
+        <div>
+          <span class="eyebrow">60-SECOND TL;DR ROLLUP</span>
+          <h2 id="briefingTitle">Loading latest digest...</h2>
+        </div>
+        <div class="briefing-meta" id="briefingMeta"></div>
+      </div>
+      <p id="executiveSummary" class="exec-summary"></p>
+
+      <div class="kpi-grid" id="kpiGrid">
+        <button class="kpi active-filter" data-verdict="ALL">
+          <span class="kpi-label">All</span>
+          <span class="kpi-value" id="kpiAll">—</span>
+        </button>
+        <button class="kpi kpi-red" data-verdict="ACT_NOW">
+          <span class="kpi-label">Act Now</span>
+          <span class="kpi-value" id="kpiActNow">—</span>
+          <span class="kpi-sub">Lock down today</span>
+        </button>
+        <button class="kpi kpi-amber" data-verdict="WATCH_HARDEN">
+          <span class="kpi-label">Watch</span>
+          <span class="kpi-value" id="kpiWatch">—</span>
+          <span class="kpi-sub">Check / harden</span>
+        </button>
+        <button class="kpi kpi-cyan" data-verdict="CUSTOMER_BRIEF">
+          <span class="kpi-label" id="kpiBriefLabel">Industry Brief</span>
+          <span class="kpi-value" id="kpiCustomer">—</span>
+          <span class="kpi-sub">Talking points</span>
+        </button>
+        <button class="kpi kpi-muted" data-verdict="NOT_APPLICABLE">
+          <span class="kpi-label">Skip</span>
+          <span class="kpi-value" id="kpiNA">—</span>
+          <span class="kpi-sub">Out of scope</span>
+        </button>
+        <button class="kpi kpi-kev" data-verdict="KEV_ONLY">
+          <span class="kpi-label">CISA KEVs</span>
+          <span class="kpi-value" id="kpiKev">—</span>
+          <span class="kpi-sub">Active in-the-wild</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Main Two-Column Grid -->
+    <div class="layout-grid">
+      <section class="main-col">
+        <div class="toolbar">
+          <div class="toolbar-row">
+            <input id="searchInput" type="search" class="search-input" placeholder="Filter by CVE, vendor, GitHub, Chrome, MCP, OAuth, token..." />
+            <div class="window-pills" role="group" aria-label="View density">
+              <button class="pill active" data-view="tldr">TL;DR Brief</button>
+              <button class="pill" data-view="detailed">Deep Dive</button>
+            </div>
+          </div>
+          <div class="bucket-chips" id="bucketChips"></div>
+        </div>
+
+        <div id="incidentList" class="incident-list"></div>
+      </section>
+
+      <aside class="side-col">
+        <!-- Immediate Lockdown Checklist -->
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Do This Today</h3>
+            <span class="badge badge-red" id="checklistProgress">0/0</span>
+          </div>
+          <p class="panel-sub">Concrete checks rolled up from <strong>Act Now</strong> &amp; <strong>Watch</strong>.</p>
+          <div id="lockdownList" class="lockdown-list"></div>
+        </div>
+
+        <!-- Realistic Root-Cause Breakdown -->
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Real Root Causes</h3>
+            <span class="mono-dim" id="rootCauseTotal"></span>
+          </div>
+          <p class="panel-sub">How these incidents actually happened.</p>
+          <div id="rootCauseBars" class="bars"></div>
+        </div>
+
+        <!-- Ransomware Leak Pulse -->
+        <div class="panel">
+          <div class="panel-head">
+            <h3>Ransomware Pulse</h3>
+            <span class="badge badge-muted" id="ransomTotal">0 victims</span>
+          </div>
+          <p class="panel-sub">Live extortion leak-site disclosures (Ransomware.live).</p>
+          <div id="ransomGroups" class="tag-cloud"></div>
+          <div id="ransomRecent" class="ransom-list"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- Slide-over Drawer: Sources Health & Raw Profile JSON -->
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <aside id="configDrawer" class="drawer hidden" aria-label="Sources and Advanced Profile">
+    <div class="drawer-head">
+      <h2>Sources &amp; Advanced Config</h2>
+      <button id="closeDrawerBtn" class="btn btn-ghost">Close</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="tab-btn active" data-tab="sourcesTab">Source Health</button>
+      <button class="tab-btn" data-tab="profileTab">Profile JSON</button>
+    </div>
+
+    <div id="sourcesTab" class="drawer-body">
+      <p class="panel-sub">Curated Tier-1 research labs, exploitation feeds, and practitioner HUMINT. Set <code>X_BEARER_TOKEN</code> in <code>.env</code> to enable live X/Twitter search.</p>
+      <div id="sourceHealthTable" class="source-list"></div>
+    </div>
+
+    <div id="profileTab" class="drawer-body hidden">
+      <p class="panel-sub">Saved locally to gitignored <code>data/profile.local.json</code> (keeps personal context out of git).</p>
+      <textarea id="profileEditor" class="code-editor" spellcheck="false"></textarea>
+      <div class="drawer-actions">
+        <button id="saveProfileBtn" class="btn btn-primary">Save Local Profile</button>
+        <span id="profileSaveStatus" class="mono-dim"></span>
+      </div>
+    </div>
+  </aside>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

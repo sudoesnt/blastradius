@@ -1,0 +1,19 @@
+{
+  "name": "blastradius",
+  "version": "0.1.0",
+  "description": "Role-tailored threat and breach digest with root-cause analysis and personal blast-radius triage.",
+  "type": "module",
+  "bin": {
+    "blastradius": "./src/cli.mjs"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "digest": "node src/cli.mjs run --hours 168",
+    "digest:48h": "node src/cli.mjs run --hours 48",
+    "digest:24h": "node src/cli.mjs run --hours 24",
+    "sources": "node src/cli.mjs sources"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

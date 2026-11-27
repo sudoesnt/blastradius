@@ -1,0 +1,14 @@
+{
+  "roleId": "field-cto",
+  "roleTitle": "Field CTO / Security Solution Engineer",
+  "stackContext": "Enterprise CISO advisory, cloud demo/PoC tenants (GCP/AWS/Azure/K8s), Google Workspace/SSO/OAuth, GitHub, local AI agents & notes, Mac/Windows",
+  "briefLabel": "Customer Brief",
+  "high_priority_keywords": [
+    "cloud", "gcp", "aws", "azure", "kubernetes", "k8s", "docker", "container",
+    "google", "chrome", "workspace", "gmail", "microsoft", "entra", "oauth", "sso", "okta",
+    "github", "gitlab", "ci/cd", "npm", "pypi", "supply chain", "javascript", "cdn",
+    "mcp", "claude", "openai", "llm", "ai agent", "vscode", "ide", "extension",
+    "windows", "macos", "apple", "ios", "firefox", "browser", "infostealer", "clickfix",
+    "session cookie", "token", "secret", "api key", "pat", "saas", "salesforce", "1password", "ransomware"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "presets": [
+    {
+      "id": "security-pro",
+      "roleTitle": "Cybersecurity Professional / Cloud Security",
+      "stackContext": "Cloud environments (AWS/GCP/Azure/K8s), GitHub, SSO/OAuth, Mac/Windows laptops, browsers, local AI dev tools",
+      "briefLabel": "Industry / Peer Brief"
+    },
+    {
+      "id": "field-cto",
+      "roleTitle": "Field CTO / Security Solution Engineer",
+      "stackContext": "Enterprise CISO advisory, cloud demo/PoC tenants (GCP/AWS/Azure/K8s), Google Workspace/SSO/OAuth, GitHub, local AI agents & notes, Mac/Windows",
+      "briefLabel": "Customer Brief"
+    },
+    {
+      "id": "ciso-secops",
+      "roleTitle": "CISO / SecOps & Detection Lead",
+      "stackContext": "Enterprise identity (Okta/Entra/Workspace), edge appliances, EDR/SIEM, cloud estate, SaaS vendors, vulnerability prioritization",
+      "briefLabel": "Board / Exec Brief"
+    },
+    {
+      "id": "software-eng",
+      "roleTitle": "Software / Platform Engineer",
+      "stackContext": "GitHub/GitLab, CI/CD pipelines, npm/PyPI/Docker dependencies, cloud IAM, Kubernetes, IDE extensions, local AI coding agents",
+      "briefLabel": "Team Intel"
+    },
+    {
+      "id": "it-admin",
+      "roleTitle": "IT / Enterprise Infrastructure Admin",
+      "stackContext": "Windows/macOS fleet management, M365/Google Workspace, VPNs/firewalls/edge appliances, identity & endpoint patching",
+      "briefLabel": "Vendor Watch"
+    },
+    {
+      "id": "general-tech",
+      "roleTitle": "Tech Executive / General Knowledge Worker",
+      "stackContext": "Work email & SaaS (Google/M365), browsers, password manager, mobile phone, banking & major consumer accounts",
+      "briefLabel": "Awareness"
+    }
+  ]
+}
