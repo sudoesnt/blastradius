@@ -4,7 +4,8 @@ const state = {
   profile: null,
   hours: 168,
   viewMode: 'tldr', // 'tldr' | 'detailed'
-  verdictFilter: 'ALL',
+  verdictFilter: 'ATTENTION', // the page opens on Act Now + Watch
+  openedLow: new Set(),
   bucketFilter: 'ALL',
   search: '',
   expandedIds: new Set(),
@@ -31,6 +32,7 @@ const els = {
   demoBanner: document.getElementById('demoBanner'),
   demoSnapshotDate: document.getElementById('demoSnapshotDate'),
   executiveSummary: document.getElementById('executiveSummary'),
+  kpiAttention: document.getElementById('kpiAttention'),
   kpiAll: document.getElementById('kpiAll'),
   kpiActNow: document.getElementById('kpiActNow'),
   kpiWatch: document.getElementById('kpiWatch'),
@@ -230,7 +232,7 @@ async function loadDigest(hours = state.hours) {
     els.executiveSummary.textContent = err.message;
     els.briefingMeta.innerHTML = '';
     els.digestNotice.classList.add('hidden');
-    for (const el of [els.kpiAll, els.kpiActNow, els.kpiWatch, els.kpiCustomer, els.kpiNA, els.kpiKev]) el.textContent = '—';
+    for (const el of [els.kpiAttention, els.kpiAll, els.kpiActNow, els.kpiWatch, els.kpiCustomer, els.kpiNA, els.kpiKev]) el.textContent = '—';
     els.bucketChips.innerHTML = '';
     els.lockdownList.innerHTML = '';
     els.checklistProgress.textContent = '0/0';
@@ -279,12 +281,7 @@ function renderAll() {
   els.digestNotice.innerHTML = notices.map((n) => `<div>${esc(n)}</div>`).join('');
 
   els.kpiBriefLabel.textContent = briefLabel();
-  els.kpiAll.textContent = d.incidents?.length ?? 0;
-  els.kpiActNow.textContent = d.stats.actNow ?? 0;
-  els.kpiWatch.textContent = d.stats.watchHarden ?? 0;
-  els.kpiCustomer.textContent = d.stats.customerBrief ?? 0;
-  els.kpiNA.textContent = d.stats.notApplicable ?? 0;
-  els.kpiKev.textContent = d.stats.kevCount ?? 0;
+  updateCounts();
 
   renderBucketChips();
   renderIncidents();
@@ -312,14 +309,23 @@ function renderBucketChips() {
   });
 }
 
+// What needs you comes first: Act Now is the critical tier and Watch is the high tier. The page opens on those two.
+// Customer Brief, Skip and anything not analysed are tucked away, one click from view, never gone.
+const isPriority = (inc) => inc.verdict === 'ACT_NOW' || inc.verdict === 'WATCH_HARDEN';
+
 function getFilteredIncidents() {
+  return filterIncidents(state.verdictFilter);
+}
+
+// The incidents a given tile would show, with the cause filter and search applied.
+function filterIncidents(verdictFilter) {
   const all = state.digest?.incidents || [];
   const q = state.search.trim().toLowerCase();
   return all.filter((inc) => {
-    if (state.verdictFilter === 'KEV_ONLY' && !inc.isKev) return false;
-    if (state.verdictFilter !== 'ALL' && state.verdictFilter !== 'KEV_ONLY' && inc.verdict !== state.verdictFilter) {
-      return false;
-    }
+    if (verdictFilter === 'KEV_ONLY' && !inc.isKev) return false;
+    // A search from the default view looks everywhere: hiding a match because it is only a brief would make search lie.
+    if (verdictFilter === 'ATTENTION' && !q && !isPriority(inc)) return false;
+    if (!['ALL', 'KEV_ONLY', 'ATTENTION'].includes(verdictFilter) && inc.verdict !== verdictFilter) return false;
     if (state.bucketFilter !== 'ALL' && inc.rootCauseBucket !== state.bucketFilter) return false;
     if (q) {
       const hay = [
@@ -342,16 +348,88 @@ function getFilteredIncidents() {
   });
 }
 
+function updateCounts() {
+  const all = state.digest?.incidents || [];
+  const n = (v) => all.filter((i) => i.verdict === v).length;
+  els.kpiAttention.textContent = all.filter(isPriority).length;
+  els.kpiAll.textContent = all.length;
+  els.kpiActNow.textContent = n('ACT_NOW');
+  els.kpiWatch.textContent = n('WATCH_HARDEN');
+  els.kpiCustomer.textContent = n('CUSTOMER_BRIEF');
+  els.kpiNA.textContent = n('NOT_APPLICABLE');
+  els.kpiKev.textContent = all.filter((i) => i.isKev).length;
+}
+
+// Switch tile, from a tile click or from the "show everything" bar.
+function setVerdictFilter(verdict) {
+  state.verdictFilter = verdict;
+  document.querySelectorAll('.kpi[data-verdict]').forEach((k) => k.classList.toggle('active-filter', k.dataset.verdict === verdict));
+  renderIncidents();
+}
+
+// What the default view is holding back, as a button that brings it in.
+function tuckedBarHtml() {
+  if (state.verdictFilter !== 'ATTENTION' || state.search.trim()) return '';
+  const hidden = filterIncidents('ALL').filter((i) => !isPriority(i));
+  if (!hidden.length) return '';
+  const count = (v) => hidden.filter((i) => i.verdict === v).length;
+  const parts = [
+    count('CUSTOMER_BRIEF') ? `${count('CUSTOMER_BRIEF')} ${briefLabel().toLowerCase()}` : '',
+    count('NOT_APPLICABLE') ? `${count('NOT_APPLICABLE')} skip` : '',
+    count('UNANALYZED') ? `${count('UNANALYZED')} not analysed` : ''
+  ].filter(Boolean).join(' · ');
+  return `<button class="tucked-bar" data-show-verdict="ALL">
+      <span><strong>${hidden.length} more</strong> tucked away: ${esc(parts)}</span>
+      <span class="tucked-go">Show everything</span>
+    </button>`;
+}
+
+function wireScopeButtons() {
+  for (const root of [els.incidentList, els.lockdownList]) {
+    root.querySelectorAll('[data-show-verdict]').forEach((btn) => {
+      btn.addEventListener('click', () => setVerdictFilter(btn.dataset.showVerdict));
+    });
+  }
+  els.incidentList.querySelectorAll('[data-open-low]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.openedLow.add(btn.dataset.openLow);
+      renderIncidents();
+    });
+  });
+}
+
+// In the full list, a brief or skip item is one line until opened, so it never competes with what needs you.
+function compactCardHtml(inc, vm) {
+  return `
+      <article class="incident-card incident-compact verdict-${esc(inc.verdict)}" data-id="${esc(inc.id)}">
+        <div class="compact-row">
+          <div class="badges">
+            <span class="badge ${vm.cls}">${esc(vm.label)}</span>
+            ${inc.isKev ? '<span class="badge badge-violet">KEV</span>' : ''}
+          </div>
+          <span class="compact-title">${esc(inc.title)}</span>
+          <button class="expand-btn" data-open-low="${esc(inc.id)}">Open</button>
+        </div>
+      </article>`;
+}
+
 function renderIncidents() {
   renderCheckups();
   const list = getFilteredIncidents();
   if (!list.length) {
-    els.incidentList.innerHTML = `<div class="empty-state">No incidents match the current filter.</div>`;
+    const nothing = state.verdictFilter === 'ATTENTION' && !state.search.trim()
+      ? 'Nothing needs you right now. No Act Now or Watch items match.'
+      : 'No incidents match the current filter.';
+    els.incidentList.innerHTML = `<div class="empty-state">${nothing}</div>${tuckedBarHtml()}`;
+    wireScopeButtons();
     return;
   }
 
+  // Compact rows only where the two kinds are mixed: the full list and search results.
+  const mixed = state.verdictFilter === 'ALL' || state.verdictFilter === 'KEV_ONLY' || (state.verdictFilter === 'ATTENTION' && state.search.trim());
   els.incidentList.innerHTML = list.map((inc) => {
     const vm = verdictMeta(inc.verdict);
+    if (mixed && !isPriority(inc) && inc.verdict !== 'UNANALYZED' && !state.openedLow.has(inc.id)) return compactCardHtml(inc, vm);
     const expanded = state.viewMode === 'detailed' || state.expandedIds.has(inc.id);
     const cveBadges = (inc.cves || []).slice(0, 2).map((c) => `<span class="badge badge-muted">${esc(c)}</span>`).join('');
     const kevBadge = inc.isKev ? `<span class="badge badge-violet">KEV${inc.kevRansomware ? ' · RW' : ''}</span>` : '';
@@ -479,7 +557,8 @@ function renderIncidents() {
           </div>
         </div>
       </article>`;
-  }).join('');
+  }).join('') + tuckedBarHtml();
+  wireScopeButtons();
 
   els.incidentList.querySelectorAll('[data-toggle-id]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -522,8 +601,10 @@ function renderLockdownChecklist() {
     return;
   }
 
+  const shown = items;
+  const held = 0;
   let done = 0;
-  const html = items.map((item) => {
+  const html = shown.map((item) => {
     const k = actionKey(item.incidentId, item.action);
     const checked = Boolean(state.checkedActions[k]);
     if (checked) done++;
@@ -537,8 +618,11 @@ function renderLockdownChecklist() {
       </label>`;
   }).join('');
 
-  els.checklistProgress.textContent = `${done}/${items.length} done`;
-  els.lockdownList.innerHTML = needListHtml() + html;
+  els.checklistProgress.textContent = `${done}/${shown.length} done`;
+  const heldHtml = held
+    ? `<button class="tucked-bar tucked-side" data-show-scope="all"><span><strong>${held} more</strong> from medium and low items</span><span class="tucked-go">Show</span></button>`
+    : '';
+  els.lockdownList.innerHTML = needListHtml() + (html || (held ? '' : '<div class="mono-dim">Nothing critical or high to check.</div>')) + heldHtml;
   wireCopyButtons(els.lockdownList);
   els.lockdownList.querySelectorAll('input[data-action-key]').forEach((cb) => {
     cb.addEventListener('change', (e) => toggleAction(cb.dataset.actionKey, e.target.checked));
@@ -1111,12 +1195,7 @@ document.querySelectorAll('.pill[data-view]').forEach((btn) => {
 });
 
 document.querySelectorAll('.kpi[data-verdict]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    state.verdictFilter = btn.dataset.verdict;
-    document.querySelectorAll('.kpi[data-verdict]').forEach((k) => k.classList.remove('active-filter'));
-    btn.classList.add('active-filter');
-    renderIncidents();
-  });
+  btn.addEventListener('click', () => setVerdictFilter(btn.dataset.verdict));
 });
 
 els.searchInput.addEventListener('input', (e) => {

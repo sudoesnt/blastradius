@@ -246,10 +246,11 @@ a:hover { text-decoration: underline; }
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
-@media (max-width: 960px) { .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 .kpi {
   text-align: left;
@@ -712,3 +713,21 @@ details.fine > summary { list-style-position: inside; }
 .checkup-last { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
 .checkup .handoff-btn { flex: none; font-size: 11.5px; padding: 4px 9px; }
 .checkup .outcome { margin: 0; }
+
+/* --- what needs you first; the rest tucked away --- */
+.kpi-attention .kpi-value { color: #f8fafc; }
+.kpi-attention { border-color: var(--border-strong); }
+.tucked-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin-top: 4px;
+  background: transparent; border: 1px dashed var(--border-strong); border-radius: 10px; padding: 11px 14px;
+  color: var(--text-dim); font-size: 13px; cursor: pointer; text-align: left;
+}
+.tucked-bar:hover { border-color: var(--cyan); color: var(--text); background: var(--surface); }
+.tucked-bar strong { color: var(--text); }
+.tucked-go { color: var(--cyan); font-weight: 700; white-space: nowrap; }
+.incident-compact { padding: 8px 14px; opacity: 0.9; }
+.compact-row { display: flex; align-items: center; gap: 10px; }
+.compact-row .badges { flex: none; }
+.compact-title { flex: 1; min-width: 0; font-size: 13.5px; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compact-row .expand-btn { flex: none; }
+@media (max-width: 640px) { .compact-row { flex-wrap: wrap; } .compact-title { white-space: normal; flex-basis: 100%; order: 3; } }
