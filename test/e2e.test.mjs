@@ -130,7 +130,7 @@ let baseUrl;
 
 before(async () => {
   installFeedStub();
-  await fs.writeFile(path.join(dataDir, 'inventory.json'), JSON.stringify({ scannedAt: new Date().toISOString(), roots: ['/code'], manifestCount: 1, packages: { npm: ['left-pad'], pip: [], go: [] } }));
+  await fs.writeFile(path.join(dataDir, 'inventory.json'), JSON.stringify({ schema: 2, complete: true, problems: [], scannedAt: new Date().toISOString(), roots: ['/code'], manifestCount: 1, packages: { npm: ['left-pad'], pip: [], go: [], cargo: [] } }));
   first = (await runPipeline({ hours: 168, sources: SOURCES, call: stubModel })).digest;
   second = (await runPipeline({ hours: 168, sources: SOURCES, call: stubModel })).digest;
   server = startServer(0);

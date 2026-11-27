@@ -6,7 +6,7 @@ import { callModel, resolveEngine, mapLimit } from './llm.mjs';
 import { matchInventory } from './inventory.mjs';
 
 // Bump when the prompt or schema changes so cached analyses are redone.
-export const PROMPT_VERSION = 5;
+export const PROMPT_VERSION = 6;
 
 // Initial-access cause only. Who did it (nation state) and what they did next (ransomware) are not causes.
 export const ROOT_CAUSE_BUCKETS = [
@@ -61,7 +61,7 @@ You only have the evidence text in each cluster: headlines, feed teasers and som
    - "WATCH_HARDEN": the technique applies directly to the reader footprint even though this incident happened to someone else, or the affected technology is in their footprint but exposure is uncertain. A product that is not in the footprint is never WATCH_HARDEN just because they might run it somewhere.
    - "CUSTOMER_BRIEF": a significant incident or exploited vulnerability in technology outside the reader footprint, worth knowing as a ${briefLabel} talking point. Product-specific vulnerabilities in things the footprint does not mention belong here if widely deployed or actively exploited.
    - "NOT_APPLICABLE": niche, out of stack or low impact.${inventoryAvailable ? `
-   Some clusters carry an "inventory" field. It is the result of a lookup against the reader's real package manifests and declared products. Treat it as fact: "matches": [] means they do not have it (so not ACT_NOW for that product); a non-empty "matches" means they do, and couldThisHappenToMe must name the match.` : ''}
+   Some clusters carry an "inventory" field. It is the result of a lookup against the reader's real package manifests and declared products. Treat it as fact. A non-empty "matches" means they have it, and couldThisHappenToMe must name the match. "matches": [] with "complete": true means they do not have it, so it is not ACT_NOW for that product. "matches": [] with "complete": false means it was not found in the part of their machine that was scanned and cannot be ruled out: do not say they do not have it; say what to look for.` : ''}
 4. couldThisHappenToMe: one direct sentence. If it depends on whether they run something, say exactly what to look for.
 5. lockItDown: for ACT_NOW or WATCH_HARDEN only, 1 or 2 concrete checks the reader can do themselves. Prefer naming the setting or page to look at over shell commands. Only give a command if you are certain of its exact syntax; a wrong command is worse than none. No generic advice ("enable MFA", "stay vigilant"). Otherwise [].
 6. skip: set true only for items that are not security content at all (greetings, adverts, event notices, job posts). Skipped items are dropped.
@@ -108,7 +108,7 @@ function buildBatchPayload(clusters, hours, inventoryById) {
       cves: c.cves,
       independentSources: c.corroborationCount,
       sources: c.sources.map((s) => `${s.name} (tier ${s.tier})`),
-      ...(inv?.checked ? { inventory: { lookedUpIn: inv.basis, matches: inv.matches } } : {}),
+      ...(inv?.checked ? { inventory: { lookedUpIn: inv.basis, matches: inv.matches, complete: inv.conclusive === true } } : {}),
       evidence: c.evidence
     };
   });
@@ -156,7 +156,8 @@ export function validateAnalysis(raw, cluster, inventory = null, playbookIds = [
   if (basis === 'UNKNOWN' && !bucket.startsWith('Not an Incident')) bucket = UNKNOWN_BUCKET;
 
   // Inventory is a fact, the model's verdict is an opinion: a product you do not have cannot be ACT_NOW.
-  if (inventory?.checked && !inventory.matches.length && verdict === 'ACT_NOW') {
+  // Only a scan that covered everything can prove an absence. An incomplete one never lowers a verdict.
+  if (inventory?.checked && !inventory.matches.length && inventory.conclusive === true && verdict === 'ACT_NOW') {
     verdict = 'WATCH_HARDEN';
     notes.push('lowered from Act Now: not found in your inventory');
   }
