@@ -1,0 +1,115 @@
+// The read-only demo site: build it from a snapshot, serve it as plain files, and run the dashboard against it.
+
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import os from 'node:os';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import { once } from 'node:events';
+import { pathToFileURL } from 'node:url';
+import { installFakeDom } from './helpers/fake-dom.mjs';
+import { buildDemo, publishProblems, forPublication } from '../scripts/build-demo.mjs';
+
+const ROOT = path.resolve(import.meta.dirname, '..');
+const defaultProfile = JSON.parse(await fs.readFile(path.join(ROOT, 'config', 'profile.json'), 'utf8'));
+const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'blastradius-demo-test-'));
+const demoDir = path.join(tmp, 'demo');
+const outDir = path.join(tmp, 'dist');
+
+const digest = {
+  schemaVersion: 2, generatedAt: '2026-11-27T12:00:00.000Z', hours: 168,
+  windowStart: '2026-11-20T12:00:00.000Z', windowEnd: '2026-11-27T12:00:00.000Z',
+  roleId: defaultProfile.roleId, roleTitle: defaultProfile.roleTitle, stackContext: defaultProfile.stackContext, briefLabel: defaultProfile.briefLabel,
+  analysisEngine: 'test', fallbackReason: null, executiveSummary: 'Summary.',
+  stats: { sourcesTotal: 1, sourcesEnabled: 1, sourcesFullCoverage: 1, sourcesPartial: 0, sourcesProblem: 0, rawItemsKept: 1, clustersTotal: 1, incidentsAnalyzed: 1, unanalyzed: 0, newSinceLast: 0, actNow: 0, watchHarden: 1, customerBrief: 0, notApplicable: 0, kevCount: 0, disclosed: 1, inferred: 0, unknownCause: 0 },
+  rootCauseBreakdown: [{ bucket: 'Stolen or Leaked Credential / Token', count: 1 }],
+  topLockdownChecklist: [{ id: 'inc-0000000000-abc', verdict: 'WATCH_HARDEN', severity: 'HIGH', action: 'Review tokens', incidentId: 'inc-0000000000', incidentTitle: 'Acme breach' }],
+  incidents: [{
+    id: 'inc-0000000000', title: 'Acme breach', verdict: 'WATCH_HARDEN', severity: 'HIGH', rootCauseBucket: 'Stolen or Leaked Credential / Token',
+    rootCauseBasis: 'DISCLOSED', evidenceQuote: 'used a stolen token', attackSurface: 'CI', tldrRootCause: 'A stolen token was used.',
+    realisticRootCause: 'Detail.', couldThisHappenToMe: 'Yes.', howItCouldHitYou: 'Path.', lockItDown: ['Review tokens'], roleAngle: '', validationNotes: [],
+    cves: [], isKev: false, kevRansomware: false, corroborationCount: 1, latestAt: '2026-11-26T12:00:00.000Z', isNew: false,
+    inventory: { checked: false, matches: [] }, sources: [{ name: 'Wire', tier: 1, url: 'https://wire.test/acme' }]
+  }],
+  ransomware: { totalVictims: 0, capped: false, topGroups: [], topSectors: [], recent: [] },
+  sourceHealth: [{ id: 'wire', name: 'Wire', tier: 1, category: 'breach-news', status: 'ok', coverage: 'full', coverageNote: '', inStoreWindowCount: 1 }]
+};
+
+let server;
+let baseUrl;
+
+before(async () => {
+  await fs.mkdir(demoDir, { recursive: true });
+  await fs.writeFile(path.join(demoDir, 'digest-168h.json'), JSON.stringify(digest));
+  await buildDemo(outDir, { demoDir });
+  // A bare static file server, standing in for GitHub Pages (served from a sub-path, like a project site).
+  server = http.createServer(async (req, res) => {
+    const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/^\/blastradius\//, '');
+    try {
+      const body = await fs.readFile(path.join(outDir, rel || 'index.html'));
+      res.writeHead(200);
+      res.end(body);
+    } catch {
+      res.writeHead(404);
+      res.end('not found');
+    }
+  }).listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  baseUrl = `http://127.0.0.1:${server.address().port}/blastradius/`;
+});
+
+after(() => server?.close());
+
+test('a snapshot built for a personal profile or carrying inventory results is refused', () => {
+  assert.deepEqual(publishProblems(digest, defaultProfile), []);
+  assert.ok(publishProblems({ ...digest, roleTitle: 'Field CTO at Example Corp' }, defaultProfile).length);
+  assert.ok(publishProblems({ ...digest, inventory: { packages: 900 } }, defaultProfile).length);
+  const withLookup = { ...digest, incidents: [{ ...digest.incidents[0], inventory: { checked: true, matches: ['npm:left-pad'] } }] };
+  assert.ok(publishProblems(withLookup, defaultProfile).length);
+  assert.deepEqual(forPublication(withLookup).incidents[0].inventory, { checked: false, matches: [] });
+});
+
+test('the build refuses to publish a personal snapshot', async () => {
+  const bad = path.join(tmp, 'bad');
+  await fs.mkdir(bad, { recursive: true });
+  await fs.writeFile(path.join(bad, 'digest-168h.json'), JSON.stringify({ ...digest, stackContext: 'My employer\'s exact stack' }));
+  await assert.rejects(buildDemo(path.join(tmp, 'bad-out'), { demoDir: bad }), /cannot be published/);
+});
+
+test('the built site is static-marked, uses only relative paths and ships the snapshot', async () => {
+  const html = await fs.readFile(path.join(outDir, 'index.html'), 'utf8');
+  assert.match(html, /<html lang="en" data-static="1">/);
+  assert.ok(!/(href|src)="\//.test(html), 'root-relative paths break on a project site served from /blastradius/');
+  for (const f of ['app.js', 'styles.css', '.nojekyll', 'snapshot/digest-168h.json', 'snapshot/digest-168h.md', 'snapshot/presets.json', 'snapshot/profile.json']) {
+    await fs.access(path.join(outDir, f));
+  }
+});
+
+test('the dashboard runs read-only against plain files', async () => {
+  const requested = [];
+  const dom = installFakeDom({ baseUrl, staticMode: true, onFetch: (u, o) => requested.push([o?.method || 'GET', String(u)]) });
+  await import(pathToFileURL(path.join(outDir, 'app.js')).href);
+
+  assert.equal((dom.html('incidentList').match(/<article/g) || []).length, 1);
+  assert.match(dom.el('briefingTitle').textContent, /Last 7 Days/);
+  assert.equal(dom.el('demoBanner').classList.contains('hidden'), false, 'the demo says it is a demo');
+  assert.equal(dom.el('demoSnapshotDate').textContent, '2026-11-27');
+  for (const id of ['refreshBtn', 'applyRoleBtn', 'saveProfileBtn', 'roleTitleInput', 'engineSelect']) {
+    assert.equal(dom.el(id).disabled, true, `${id} is disabled`);
+  }
+
+  // Ticking a checklist item is kept in the browser and sends nothing anywhere.
+  const box = { dataset: { actionKey: 'inc-0000000000::Review tokens' } };
+  await dom.changeCheckbox(box, true);
+  assert.match(globalThis.localStorage.getItem('blastradius-demo-state'), /Review tokens/);
+
+  assert.ok(requested.every(([method]) => method === 'GET'), 'the demo only ever reads');
+  assert.ok(requested.every(([, u]) => !u.includes('/api/')), 'and never calls a server API');
+
+  // A window with no snapshot says so and shows nothing else.
+  await dom.pills[0].listeners.click[0]();
+  await new Promise((r) => setTimeout(r, 200));
+  assert.match(dom.el('briefingTitle').textContent, /No 24h digest yet/);
+  assert.match(dom.html('incidentList'), /No 24h snapshot in this demo/);
+});
