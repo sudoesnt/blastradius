@@ -14,6 +14,8 @@ const state = {
   agentId: null,
   handoffs: [],
   handoffNotes: {},
+  shownPrompts: {},
+  staticPrompts: {},
   handoffTimer: null
 };
 
@@ -491,6 +493,9 @@ function renderIncidents() {
   els.incidentList.querySelectorAll('[data-handoff]').forEach((btn) => {
     btn.addEventListener('click', () => handOff(btn.dataset.handoff, btn.dataset.launch === '1'));
   });
+  els.incidentList.querySelectorAll('[data-handoff-show]').forEach((btn) => {
+    btn.addEventListener('click', () => staticHandOff(btn.dataset.handoffShow, true));
+  });
 
   els.incidentList.querySelectorAll('input[data-action-key]').forEach((cb) => {
     cb.addEventListener('change', (e) => toggleAction(cb.dataset.actionKey, e.target.checked));
@@ -693,12 +698,21 @@ function receiptLine(h) {
 
 function renderHandoffRow(inc) {
   if (STATIC) {
+    // The demo cannot open an agent on your machine, so the button copies the same prompt for you to paste.
+    const books = (inc.playbooks || []).length;
+    const note = state.handoffNotes[inc.id];
+    const shown = state.shownPrompts[inc.id];
     return `<div class="tldr-row">
       <span class="tldr-k">Agent</span>
-      <div class="handoff"><div class="handoff-actions">
-        <button class="handoff-btn" disabled>Give this to your agent</button>
-        <span class="handoff-scope">Available when you run BlastRadius on your own machine.</span>
-      </div></div>
+      <div class="handoff">
+        <div class="handoff-actions">
+          <button class="handoff-btn" data-handoff="${esc(inc.id)}" title="Copies a ready-made prompt. Paste it into Claude Code, Codex, Antigravity or any agent on your own machine.">Copy the prompt for your agent</button>
+          <button class="handoff-copy" data-handoff-show="${esc(inc.id)}">${shown ? 'Hide prompt' : 'Read it first'}</button>
+          <span class="handoff-scope">${books ? `${Number(books)} reviewed check${books === 1 ? '' : 's'}` : 'guided, read-only'} · your agent runs it on your machine; this page sends nothing</span>
+        </div>
+        ${note ? `<span class="handoff-status">${esc(note)}</span>` : ''}
+        ${shown ? `<pre class="handoff-prompt">${esc(shown)}</pre>` : ''}
+      </div>
     </div>`;
   }
   const agent = currentAgent();
@@ -781,7 +795,37 @@ function stopHandoffPolling() {
   }
 }
 
+// Demo only: prompts were built with the snapshot, so copying one needs no server and sends nothing.
+async function staticHandOff(incidentId, showOnly) {
+  try {
+    const hours = Number(state.hours);
+    if (!state.staticPrompts[hours]) {
+      const res = await fetch(`snapshot/handoffs-${hours}h.json`);
+      if (!res.ok) throw new Error('This snapshot has no agent prompts.');
+      state.staticPrompts[hours] = await res.json();
+    }
+    const prompt = state.staticPrompts[hours][incidentId];
+    if (!prompt) throw new Error('No prompt for this incident in the snapshot.');
+    if (showOnly) {
+      if (state.shownPrompts[incidentId]) delete state.shownPrompts[incidentId];
+      else state.shownPrompts[incidentId] = prompt;
+    } else {
+      try {
+        await navigator.clipboard.writeText(prompt);
+        state.handoffNotes[incidentId] = 'Copied. Paste it into your own agent on your own machine. It checks first and asks before changing anything.';
+      } catch {
+        state.shownPrompts[incidentId] = prompt;
+        state.handoffNotes[incidentId] = 'Your browser blocked the clipboard, so the prompt is shown below to copy by hand.';
+      }
+    }
+  } catch (err) {
+    state.handoffNotes[incidentId] = err.message;
+  }
+  renderIncidents();
+}
+
 async function handOff(incidentId, launch) {
+  if (STATIC) return staticHandOff(incidentId, false);
   const agent = currentAgent();
   if (!agent) return;
   const wantLaunch = launch && agent.canLaunch;

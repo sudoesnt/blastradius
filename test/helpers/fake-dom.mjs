@@ -51,6 +51,19 @@ export function installFakeDom({ baseUrl, staticMode = false, onFetch = null }) 
     pills,
     html: (id) => globalThis.document.getElementById(id).innerHTML,
     allHtml: () => [...els.values()].map((e) => e.innerHTML).join('\n'),
+    // Press a button the page rendered inside a list. The fake DOM has no real elements, so the list hands back one
+    // stand-in matching `match` on its next render and the test then fires the click handler the page attached to it.
+    async pressInList(listId, match, dataset) {
+      const list = globalThis.document.getElementById(listId);
+      const handlers = [];
+      list.querySelectorAll = (sel) => (sel.includes(match) ? [{ dataset, addEventListener: (_t, fn) => handlers.push(fn) }] : []);
+      const pill = pills.find((p) => p.classList.contains('active')) || pills[2];
+      await pill.listeners.click[0]();
+      await new Promise((r) => setTimeout(r, 150));
+      list.querySelectorAll = () => [];
+      await handlers.at(-1)();
+      await new Promise((r) => setTimeout(r, 50));
+    },
     // The page wires checkbox "change" handlers onto elements found by querySelectorAll, which this fake does not
     // model. Tests reach the same code path by letting the list element hand back one checkbox on its next render.
     async changeCheckbox(box, checked) {

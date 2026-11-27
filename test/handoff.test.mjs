@@ -172,3 +172,10 @@ test('the server builds a handoff from the digest, not from what the browser sen
   assert.ok(mine.receiptAt);
   assert.equal(AGENTS.map((a) => a.id).join(','), 'claude,codex,antigravity');
 });
+
+test('without a receipt path the prompt asks for a spoken summary instead of a file', () => {
+  const prompt = buildHandoffPrompt({ id: 'demo-inc-0123456789', incident, playbooks, agentId: 'your-agent', receiptPath: null });
+  assert.ok(!prompt.includes('## Receipt'));
+  assert.ok(prompt.includes('Finish with a short plain summary'));
+  assert.ok(prompt.includes('gh auth status'));
+});

@@ -12,6 +12,9 @@ on:
       - 'config/profile.json'
       - 'scripts/build-demo.mjs'
       - 'src/store.mjs'
+      - 'src/handoff.mjs'
+      - 'src/playbooks.mjs'
+      - 'config/playbooks.json'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 

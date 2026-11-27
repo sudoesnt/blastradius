@@ -34,6 +34,9 @@ export function forPublication(digest) {
 
 export async function buildDemo(outDir, { demoDir = path.join(ROOT, 'demo') } = {}) {
   const { renderMarkdownDigest } = await import(pathToFileURL(path.join(ROOT, 'src', 'store.mjs')).href);
+  const { buildHandoffPrompt } = await import(pathToFileURL(path.join(ROOT, 'src', 'handoff.mjs')).href);
+  const { loadPlaybooks } = await import(pathToFileURL(path.join(ROOT, 'src', 'playbooks.mjs')).href);
+  const playbooks = await loadPlaybooks();
   const defaultProfile = JSON.parse(await fs.readFile(path.join(ROOT, 'config', 'profile.json'), 'utf8'));
   const snapshotDir = path.join(outDir, 'snapshot');
   await fs.rm(outDir, { recursive: true, force: true });
@@ -61,6 +64,14 @@ export async function buildDemo(outDir, { demoDir = path.join(ROOT, 'demo') } = 
     const clean = forPublication(digest);
     await fs.writeFile(path.join(snapshotDir, `digest-${hours}h.json`), JSON.stringify(clean));
     await fs.writeFile(path.join(snapshotDir, `digest-${hours}h.md`), renderMarkdownDigest(clean));
+
+    // The demo has no local server to hand work to an agent, so the prompts are built here. A visitor copies one
+    // and pastes it into their own agent. There is no receipt path: nothing reports back to a public page.
+    const prompts = {};
+    for (const inc of clean.incidents.filter((i) => i.verdict === 'ACT_NOW' || i.verdict === 'WATCH_HARDEN')) {
+      prompts[inc.id] = buildHandoffPrompt({ id: `demo-${inc.id}`, incident: inc, playbooks, agentId: 'your-agent', receiptPath: null });
+    }
+    await fs.writeFile(path.join(snapshotDir, `handoffs-${hours}h.json`), JSON.stringify(prompts));
     built.push(hours);
   }
   if (!built.includes(168)) throw new Error('demo/digest-168h.json is missing; the dashboard opens on the 7-day window');
