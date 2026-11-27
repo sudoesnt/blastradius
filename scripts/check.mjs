@@ -175,6 +175,24 @@ for (const f of tracked.filter((x) => /^(src|public|scripts)\/.*\.(mjs|js)$/.tes
   }
 }
 
+// 6. Demo site
+//
+// The demo is public. A snapshot may only be committed if it was built with the generic default profile and
+// carries no inventory results, and the page must work from a sub-path (GitHub Pages project sites).
+const { publishProblems } = await import(new URL('./build-demo.mjs', import.meta.url));
+for (const f of tracked.filter((x) => /^demo\/digest-\d+h\.json$/.test(x))) {
+  const snapshot = await readJson(f);
+  if (snapshot && profile) {
+    for (const p of publishProblems(snapshot, profile)) {
+      fail(`${f}: ${p}. The demo is public; regenerate it with "npm run demo:snapshot", which uses a clean data folder.`);
+    }
+  }
+}
+const indexHtml = await fs.readFile(path.join(ROOT, 'public/index.html'), 'utf8');
+if (/(href|src)="\/[^/]/.test(indexHtml)) {
+  fail('public/index.html: uses a root-relative path (href="/..." or src="/..."). Use a relative path ("styles.css") so the page also works when served from /blastradius/ on GitHub Pages.');
+}
+
 if (problems.length) {
   console.error(`check: ${problems.length} problem(s)\n`);
   for (const p of problems) console.error(`  - ${p}`);
