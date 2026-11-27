@@ -28,7 +28,7 @@ const digest = {
   incidents: [{
     id: 'inc-0000000000', title: 'Acme breach', verdict: 'WATCH_HARDEN', severity: 'HIGH', rootCauseBucket: 'Stolen or Leaked Credential / Token',
     rootCauseBasis: 'DISCLOSED', evidenceQuote: 'used a stolen token', attackSurface: 'CI', tldrRootCause: 'A stolen token was used.',
-    realisticRootCause: 'Detail.', couldThisHappenToMe: 'Yes.', howItCouldHitYou: 'Path.', lockItDown: ['Review tokens'], roleAngle: '', validationNotes: [],
+    realisticRootCause: 'Detail.', couldThisHappenToMe: 'Yes.', howItCouldHitYou: 'Path.', lockItDown: ['Review tokens'], roleAngle: '', playbooks: ['github-tokens'], validationNotes: [],
     cves: [], isKev: false, kevRansomware: false, corroborationCount: 1, latestAt: '2026-11-26T12:00:00.000Z', isNew: false,
     inventory: { checked: false, matches: [] }, sources: [{ name: 'Wire', tier: 1, url: 'https://wire.test/acme' }]
   }],
@@ -81,7 +81,7 @@ test('the built site is static-marked, uses only relative paths and ships the sn
   const html = await fs.readFile(path.join(outDir, 'index.html'), 'utf8');
   assert.match(html, /<html lang="en" data-static="1">/);
   assert.ok(!/(href|src)="\//.test(html), 'root-relative paths break on a project site served from /blastradius/');
-  for (const f of ['app.js', 'styles.css', '.nojekyll', 'snapshot/digest-168h.json', 'snapshot/digest-168h.md', 'snapshot/presets.json', 'snapshot/profile.json']) {
+  for (const f of ['app.js', 'styles.css', '.nojekyll', 'snapshot/digest-168h.json', 'snapshot/digest-168h.md', 'snapshot/handoffs-168h.json', 'snapshot/presets.json', 'snapshot/profile.json']) {
     await fs.access(path.join(outDir, f));
   }
 });
@@ -90,6 +90,9 @@ test('the dashboard runs read-only against plain files', async () => {
   const requested = [];
   const dom = installFakeDom({ baseUrl, staticMode: true, onFetch: (u, o) => requested.push([o?.method || 'GET', String(u)]) });
   await import(pathToFileURL(path.join(outDir, 'app.js')).href);
+  // The page module can only be loaded once per process; later tests in this file reuse it.
+  globalThis.__demoDom = dom;
+  globalThis.__demoRequests = requested;
 
   assert.equal((dom.html('incidentList').match(/<article/g) || []).length, 1);
   assert.match(dom.el('briefingTitle').textContent, /Last 7 Days/);
@@ -112,4 +115,36 @@ test('the dashboard runs read-only against plain files', async () => {
   await new Promise((r) => setTimeout(r, 200));
   assert.match(dom.el('briefingTitle').textContent, /No 24h digest yet/);
   assert.match(dom.html('incidentList'), /No 24h snapshot in this demo/);
+});
+
+test('the demo ships a ready-made agent prompt for each actionable incident, with no receipt to write', async () => {
+  const prompts = JSON.parse(await fs.readFile(path.join(outDir, 'snapshot', 'handoffs-168h.json'), 'utf8'));
+  assert.deepEqual(Object.keys(prompts), ['inc-0000000000']);
+  const prompt = prompts['inc-0000000000'];
+  assert.ok(prompt.includes('gh auth status'), 'built from the reviewed playbook');
+  assert.ok(prompt.includes('Make a change only after the person says yes'));
+  assert.ok(!prompt.includes('## Receipt') && !prompt.includes('receipt file'), 'a public page has nowhere to send a receipt');
+  assert.ok(!prompt.includes(os.homedir()) && !prompt.includes(os.tmpdir()), 'no paths from the machine that built the demo');
+});
+
+test('in the demo the agent button copies the prompt and sends nothing', async () => {
+  // The dashboard module is already loaded by the earlier test in this file; reuse its page.
+  const dom = globalThis.__demoDom;
+  let copied = null;
+  Object.defineProperty(globalThis, 'navigator', { value: { clipboard: { writeText: async (t) => { copied = t; } } }, configurable: true });
+  const before = globalThis.__demoRequests.length;
+
+  // The earlier test left the page on the empty 24h window; go back to the 7-day snapshot.
+  await dom.pills[2].listeners.click[0]();
+  await new Promise((r) => setTimeout(r, 200));
+  assert.match(dom.html('incidentList'), /data-handoff="inc-0000000000"[^>]*>Copy the prompt for your agent/);
+  await dom.pressInList('incidentList', 'data-handoff]', { handoff: 'inc-0000000000' });
+  assert.ok(copied && copied.includes('gh auth status'));
+  assert.match(dom.html('incidentList'), /Copied. Paste it into your own agent/);
+
+  await dom.pressInList('incidentList', 'data-handoff-show', { handoffShow: 'inc-0000000000' });
+  assert.match(dom.html('incidentList'), /<pre class="handoff-prompt">/);
+
+  const made = globalThis.__demoRequests.slice(before);
+  assert.ok(made.every(([method, u]) => method === 'GET' && !u.includes('/api/')), 'only static files were read');
 });
