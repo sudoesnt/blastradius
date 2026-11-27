@@ -1,9 +1,9 @@
 {
  "schemaVersion": 2,
- "generatedAt": "2026-11-27T17:50:54.259Z",
+ "generatedAt": "2026-11-27T21:55:55.852Z",
  "hours": 48,
- "windowStart": "2026-11-25T17:50:54.259Z",
- "windowEnd": "2026-11-27T17:50:54.259Z",
+ "windowStart": "2026-11-25T21:55:55.852Z",
+ "windowEnd": "2026-11-27T21:55:55.852Z",
  "previousGeneratedAt": null,
  "roleId": "security-pro",
  "roleTitle": "Cybersecurity Professional / Cloud Security",
@@ -11,28 +11,28 @@
  "briefLabel": "Industry / Peer Brief",
  "analysisEngine": "claude-cli",
  "fallbackReason": null,
- "executiveSummary": "Exploitation of internet-facing flaws was the dominant way in this period, with Mitel MiCollab zero-days exploited before the vendor's advisory and a critical Juniper Session Smart Conductor flaw (CVE-2026-103406) used to run commands as root. The most useful check for you is employee GitHub access: review and rotate personal tokens and audit recent pushes for unexpected changes, since stolen employee tokens were reportedly used to copy and alter SAP code, and a compromised 1Password employee GitHub account (likely, but not confirmed, via a stolen credential or token) was used to push malicious code.",
+ "executiveSummary": "Exploitation of internet-facing software was the most common way in this period, including unauthenticated takeover of Drupal sites left with an exposed installer and Mitel MiCollab zero-days exploited before the vendor's advisory. The most useful thing to check is how your employee GitHub accounts and tokens are protected and monitored, because stolen tokens were reportedly used to copy and alter SAP source code and a compromised employee account was used to push malicious code at 1Password.",
  "stats": {
   "sourcesTotal": 35,
   "sourcesEnabled": 32,
-  "sourcesFullCoverage": 27,
+  "sourcesFullCoverage": 28,
   "sourcesPartial": 4,
-  "sourcesProblem": 1,
-  "rawItemsKept": 40,
+  "sourcesProblem": 0,
+  "rawItemsKept": 42,
   "clustersTotal": 34,
   "incidentsAnalyzed": 34,
   "unanalyzed": 0,
-  "fromCache": 30,
+  "fromCache": 27,
   "skippedNotSecurity": 0,
   "newSinceLast": 0,
   "actNow": 0,
-  "watchHarden": 11,
-  "customerBrief": 14,
-  "notApplicable": 9,
-  "kevCount": 0,
-  "disclosed": 19,
+  "watchHarden": 9,
+  "customerBrief": 15,
+  "notApplicable": 10,
+  "kevCount": 2,
+  "disclosed": 21,
   "inferred": 1,
-  "unknownCause": 14
+  "unknownCause": 12
  },
  "rootCauseBreakdown": [
   {
@@ -45,178 +45,108 @@
   },
   {
    "bucket": "Not an Incident (Research / Policy / Legal)",
-   "count": 5
-  },
-  {
-   "bucket": "Phishing / Social Engineering",
-   "count": 3
+   "count": 4
   },
   {
    "bucket": "Stolen or Leaked Credential / Token",
+   "count": 3
+  },
+  {
+   "bucket": "Malware / Infostealer on Endpoint",
+   "count": 2
+  },
+  {
+   "bucket": "Phishing / Social Engineering",
    "count": 2
   },
   {
    "bucket": "Supply Chain / 3rd-Party Compromise",
    "count": 2
-  },
-  {
-   "bucket": "Malware / Infostealer on Endpoint",
-   "count": 1
   }
  ],
  "topLockdownChecklist": [
   {
-   "id": "inc-edd213a94d-8d0461",
+   "id": "inc-4608cdd4f1-98d773",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "In GitHub rulesets or branch protection for branches that deploy to production, confirm pull request approval by another person is required and that admins cannot bypass it.",
-   "incidentId": "inc-edd213a94d",
-   "incidentTitle": "1Password: compromised employee GitHub account used to push malicious code and steal data"
-  },
-  {
-   "id": "inc-edd213a94d-73e158",
-   "verdict": "WATCH_HARDEN",
-   "severity": "HIGH",
-   "action": "In GitHub Environments for production deployments, confirm required reviewers are set, and review the organisation audit log for newly added personal access tokens, SSH keys and OAuth apps.",
-   "incidentId": "inc-edd213a94d",
-   "incidentTitle": "1Password: compromised employee GitHub account used to push malicious code and steal data"
-  },
-  {
-   "id": "inc-4608cdd4f1-4c8cb8",
-   "verdict": "WATCH_HARDEN",
-   "severity": "HIGH",
-   "action": "Open chrome://extensions on your laptops and remove anything you did not install, especially an extension named like Google Sheets that did not come from your own install.",
+   "action": "Open chrome://extensions in each Chrome profile and remove any Google Sheets-branded or unfamiliar extension you did not install, especially ones loaded outside the Chrome Web Store.",
    "incidentId": "inc-4608cdd4f1",
    "incidentTitle": "Remus infostealer reads Gmail through a fake Google Sheets Chrome extension"
   },
   {
-   "id": "inc-4608cdd4f1-17f580",
+   "id": "inc-4608cdd4f1-c316ff",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "If you manage Chrome centrally, check in the admin console's extension policy that installs are limited to an allowlist rather than open to any extension.",
+   "action": "Open chrome://management and confirm the browser is managed only by your organisation; where you administer Chrome, restrict installs to an extension allowlist.",
    "incidentId": "inc-4608cdd4f1",
    "incidentTitle": "Remus infostealer reads Gmail through a fake Google Sheets Chrome extension"
   },
   {
-   "id": "inc-b796479bd8-5ffd0a",
+   "id": "inc-b796479bd8-b11e7b",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "In GitHub, go to Settings > Developer settings > Personal access tokens and revoke tokens that are unused, have no expiry or have broad repo scope; at org level, review the personal access token policy and consider restr",
+   "action": "In GitHub under Settings > Developer settings > Personal access tokens, revoke unused tokens and replace classic tokens with fine-grained, expiring ones; also review Settings > Applications for authorised OAuth apps.",
    "incidentId": "inc-b796479bd8",
    "incidentTitle": "SAP confirms incident; stolen employee GitHub tokens reportedly used to copy and alter code"
   },
   {
-   "id": "inc-b796479bd8-a8cc0c",
+   "id": "inc-b796479bd8-2ec8ba",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "Check the organisation audit log for unusual clone or push activity by token, and confirm branch protection requires review on default branches.",
+   "action": "In the organisation settings, review the audit log for unusual clone or push activity and require approval for personal access tokens that reach organisation repositories.",
    "incidentId": "inc-b796479bd8",
    "incidentTitle": "SAP confirms incident; stolen employee GitHub tokens reportedly used to copy and alter code"
   },
   {
-   "id": "inc-32e3b3c32f-0d0428",
+   "id": "inc-f8742688e9-7a8670",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "Open chrome://management (or edge://management) and confirm the browser is managed only by your own organization, or not at all on personal devices.",
+   "action": "In GitHub organisation settings, check branch protection or rulesets on default branches: require pull request review and block direct and force pushes, including for admins.",
+   "incidentId": "inc-f8742688e9",
+   "incidentTitle": "1Password breach: compromised employee GitHub account used to push malicious code"
+  },
+  {
+   "id": "inc-f8742688e9-38a191",
+   "verdict": "WATCH_HARDEN",
+   "severity": "HIGH",
+   "action": "Review your GitHub account's Sessions, SSH keys and Personal access tokens pages and revoke anything unrecognised or unused.",
+   "incidentId": "inc-f8742688e9",
+   "incidentTitle": "1Password breach: compromised employee GitHub account used to push malicious code"
+  },
+  {
+   "id": "inc-32e3b3c32f-b3c14e",
+   "verdict": "WATCH_HARDEN",
+   "severity": "HIGH",
+   "action": "Open chrome://management and chrome://policy (or edge://management and edge://policy) and confirm any management or forced-install policy is one your organisation set.",
    "incidentId": "inc-32e3b3c32f",
-   "incidentTitle": "SYS01 infostealer enrols browsers in management to force a mail-stealing extension"
+   "incidentTitle": "SYS01 infostealer enrols browsers in fake management to force a mail-stealing extension"
   },
   {
-   "id": "inc-32e3b3c32f-aa55d7",
+   "id": "inc-32e3b3c32f-a04e79",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "Open chrome://policy and look for force-installed extension entries (ExtensionInstallForcelist) you do not recognise.",
+   "action": "Review the extensions list for anything you did not install or cannot remove.",
    "incidentId": "inc-32e3b3c32f",
-   "incidentTitle": "SYS01 infostealer enrols browsers in management to force a mail-stealing extension"
+   "incidentTitle": "SYS01 infostealer enrols browsers in fake management to force a mail-stealing extension"
   },
   {
-   "id": "inc-3f8762f309-8ca53a",
+   "id": "inc-9fd9b49940-bb6bf5",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "Check Windows Settings > Apps > Installed apps, or your endpoint software inventory, for Q-Dir and DesktopOK on Windows laptops.",
-   "incidentId": "inc-3f8762f309",
-   "incidentTitle": "Official Q-Dir and DesktopOK downloads and updates trojanized with remote access malware"
+   "action": "In GitHub Settings, review the Security log, Sessions, SSH keys and Personal access tokens for anything you do not recognise, and revoke unused tokens.",
+   "incidentId": "inc-9fd9b49940",
+   "incidentTitle": "PolinRider campaign plants malware in over 7,600 GitHub repositories owned by real developers"
   },
   {
-   "id": "inc-3f8762f309-84cb1e",
+   "id": "inc-9fd9b49940-4554bf",
    "verdict": "WATCH_HARDEN",
    "severity": "HIGH",
-   "action": "If either is present, treat the machine as potentially compromised until checked against the researchers' published indicators, and re-issue credentials and sessions used on it.",
-   "incidentId": "inc-3f8762f309",
-   "incidentTitle": "Official Q-Dir and DesktopOK downloads and updates trojanized with remote access malware"
+   "action": "Review recent commit history on your repos' default branches for pushes you did not make, particularly changes to config or build files.",
+   "incidentId": "inc-9fd9b49940",
+   "incidentTitle": "PolinRider campaign plants malware in over 7,600 GitHub repositories owned by real developers"
   }
  ],
  "incidents": [
-  {
-   "id": "inc-edd213a94d",
-   "cves": [],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 3,
-   "tier1Count": 0,
-   "signalScore": 56,
-   "earliestAt": "2026-11-25T21:33:33.000Z",
-   "latestAt": "2026-11-26T10:57:25.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "bleepingcomputer",
-     "name": "BleepingComputer",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 9,
-     "owner": "bleepingcomputer",
-     "title": "1Password customer data stolen after employee GitHub account breach",
-     "url": "https://www.bleepingcomputer.com/news/security/1password-customer-data-stolen-after-employee-github-account-breach/",
-     "publishedAt": "2026-11-25T21:33:33.000Z"
-    },
-    {
-     "id": "securityweek",
-     "name": "SecurityWeek",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 7,
-     "owner": "securityweek",
-     "title": "1Password Breach Exposes Customer Data, Internal Source Code",
-     "url": "https://www.securityweek.com/1password-breach-exposes-customer-data-internal-source-code/",
-     "publishedAt": "2026-11-26T08:32:10.000Z"
-    },
-    {
-     "id": "thehackernews",
-     "name": "The Hacker News",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 7,
-     "owner": "thehackernews",
-     "title": "1Password Hacked, Customer Data and Source Code Stolen in GitHub Account Breach",
-     "url": "https://thehackernews.com/2026/11/1password-hacked-customer-data-and.html",
-     "publishedAt": "2026-11-26T10:57:25.000Z"
-    }
-   ],
-   "title": "1Password: compromised employee GitHub account used to push malicious code and steal data",
-   "severity": "HIGH",
-   "verdict": "WATCH_HARDEN",
-   "rootCauseBucket": "Stolen or Leaked Credential / Token",
-   "rootCauseBasis": "INFERRED",
-   "evidenceQuote": "",
-   "attackSurface": "GitHub / CI-CD",
-   "tldrRootCause": "An employee's corporate GitHub account was taken over, likely via a stolen credential or token, and used to deploy malicious code.",
-   "realisticRootCause": "The reporting says the attacker used the compromised account to push malicious code to backend services, then stole customer records and internal source code. How the account was taken over is not stated, so the credential theft is an inference; 1Password says vaults were not accessed.",
-   "couldThisHappenToMe": "Yes, the technique applies to any GitHub organisation where one developer account can push code that deploys to production without a second approval.",
-   "howItCouldHitYou": "If one of your GitHub accounts or tokens is taken over, and a single account can merge and deploy, an attacker can ship malicious code into your cloud backend the same way.",
-   "lockItDown": [
-    "In GitHub rulesets or branch protection for branches that deploy to production, confirm pull request approval by another person is required and that admins cannot bypass it.",
-    "In GitHub Environments for production deployments, confirm required reviewers are set, and review the organisation audit log for newly added personal access tokens, SSH keys and OAuth apps."
-   ],
-   "roleAngle": "One developer account led to both source code and customer data, which makes the case for two-person control on every path from GitHub to production.",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
   {
    "id": "inc-4608cdd4f1",
    "cves": [],
@@ -242,22 +172,27 @@
      "publishedAt": "2026-11-26T15:23:28.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "Remus infostealer reads Gmail through a fake Google Sheets Chrome extension",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
    "rootCauseBucket": "Malware / Infostealer on Endpoint",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "stealing Gmail messages through a stealthy malicious Chrome extension",
+   "evidenceQuote": "The Remus infostealer is stealing Gmail messages through a stealthy malicious Chrome extension",
    "attackSurface": "Chrome extensions / Gmail",
-   "tldrRootCause": "An infostealer installs a malicious Chrome extension posing as Google Sheets, which then reads Gmail messages from the logged-in browser.",
-   "realisticRootCause": "The Remus infostealer uses a malicious Chrome extension to read Gmail from inside the browser session. Its operators marketed this as a Gmail zero-day, but the evidence describes an extension, not a flaw in Gmail; how Remus first lands on the machine is not stated.",
-   "couldThisHappenToMe": "Yes, if an infostealer runs on a laptop where Chrome is signed in to Gmail; look for a Google Sheets extension nobody installed.",
-   "howItCouldHitYou": "An infected Mac or Windows laptop gets a rogue extension added to Chrome, which reads mail (including password resets and cloud alerts) from the active session.",
+   "tldrRootCause": "The Remus infostealer, once on a machine, uses a malicious Chrome extension posing as Google Sheets to read Gmail messages.",
+   "realisticRootCause": "The extension works inside the signed-in browser session, so it reads mail without needing the password or MFA. How Remus first reaches the endpoint is not stated in the evidence.",
+   "couldThisHappenToMe": "Yes, if an infostealer lands on a laptop where you use Chrome with Gmail; look for a Google Sheets extension you did not install.",
+   "howItCouldHitYou": "An infostealer infection on your Mac or Windows laptop could add the extension to Chrome, which then reads mail from your logged-in Gmail session.",
    "lockItDown": [
-    "Open chrome://extensions on your laptops and remove anything you did not install, especially an extension named like Google Sheets that did not come from your own install.",
-    "If you manage Chrome centrally, check in the admin console's extension policy that installs are limited to an allowlist rather than open to any extension."
+    "Open chrome://extensions in each Chrome profile and remove any Google Sheets-branded or unfamiliar extension you did not install, especially ones loaded outside the Chrome Web Store.",
+    "Open chrome://management and confirm the browser is managed only by your organisation; where you administer Chrome, restrict installs to an extension allowlist."
    ],
-   "roleAngle": "Session-level theft via an extension sidesteps MFA, so extension allowlisting is an identity control as much as an endpoint one.",
+   "roleAngle": "A browser extension inherits the user's session, so it defeats MFA; an extension allowlist is the control that matters here.",
+   "playbooks": [
+    "browser-extensions"
+   ],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -301,6 +236,8 @@
      "publishedAt": "2026-11-27T07:36:14.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "SAP confirms incident; stolen employee GitHub tokens reportedly used to copy and alter code",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
@@ -308,15 +245,84 @@
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "hackers reportedly used stolen employee tokens to copy and alter source code",
    "attackSurface": "GitHub / source code",
-   "tldrRootCause": "Attackers reportedly used stolen employee tokens to access SAP's GitHub and copy and alter source code.",
-   "realisticRootCause": "SAP confirmed an incident and detected suspicious activity on GitHub; reporting says stolen employee tokens were used to copy and alter source code. How the tokens were stolen is not stated in the evidence.",
-   "couldThisHappenToMe": "Yes, the technique applies to any GitHub organisation: a long-lived employee token with repo write access is enough.",
-   "howItCouldHitYou": "A personal access token or OAuth token lifted from a developer laptop or a CI secret would let an attacker clone and push to your repositories without touching SSO.",
+   "tldrRootCause": "Attackers reportedly used stolen employee GitHub tokens to copy and alter SAP source code.",
+   "realisticRootCause": "SAP confirmed an incident and detected suspicious activity on GitHub. The token-theft detail is reported rather than confirmed by SAP, and how the tokens were stolen is not stated.",
+   "couldThisHappenToMe": "Yes, the same technique works against any GitHub organisation where long-lived personal tokens have broad repository access.",
+   "howItCouldHitYou": "A token taken from a developer laptop, CI log or config file would give an attacker the same read and write access to your repositories as its owner.",
    "lockItDown": [
-    "In GitHub, go to Settings > Developer settings > Personal access tokens and revoke tokens that are unused, have no expiry or have broad repo scope; at org level, review the personal access token policy and consider restr",
-    "Check the organisation audit log for unusual clone or push activity by token, and confirm branch protection requires review on default branches."
+    "In GitHub under Settings > Developer settings > Personal access tokens, revoke unused tokens and replace classic tokens with fine-grained, expiring ones; also review Settings > Applications for authorised OAuth apps.",
+    "In the organisation settings, review the audit log for unusual clone or push activity and require approval for personal access tokens that reach organisation repositories."
    ],
-   "roleAngle": "Tokens are bearer credentials that bypass SSO and MFA, so token lifetime and scope are the controls that matter here.",
+   "roleAngle": "The reported alteration of code, not just copying, makes this a source-integrity issue: branch protection and signed commits matter alongside token hygiene.",
+   "playbooks": [
+    "github-tokens",
+    "secrets-on-disk"
+   ],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-f8742688e9",
+   "cves": [],
+   "isKev": false,
+   "kevRansomware": false,
+   "corroborationCount": 2,
+   "tier1Count": 0,
+   "signalScore": 37,
+   "earliestAt": "2026-11-26T08:32:10.000Z",
+   "latestAt": "2026-11-26T10:57:25.000Z",
+   "firstSeenAt": "2026-11-27T16:50:26.225Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "securityweek",
+     "name": "SecurityWeek",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 7,
+     "owner": "securityweek",
+     "title": "1Password Breach Exposes Customer Data, Internal Source Code",
+     "url": "https://www.securityweek.com/1password-breach-exposes-customer-data-internal-source-code/",
+     "publishedAt": "2026-11-26T08:32:10.000Z"
+    },
+    {
+     "id": "thehackernews",
+     "name": "The Hacker News",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 7,
+     "owner": "thehackernews",
+     "title": "1Password Hacked, Customer Data and Source Code Stolen in GitHub Account Breach",
+     "url": "https://thehackernews.com/2026/11/1password-hacked-customer-data-and.html",
+     "publishedAt": "2026-11-26T10:57:25.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [],
+   "title": "1Password breach: compromised employee GitHub account used to push malicious code",
+   "severity": "HIGH",
+   "verdict": "WATCH_HARDEN",
+   "rootCauseBucket": "Stolen or Leaked Credential / Token",
+   "rootCauseBasis": "DISCLOSED",
+   "evidenceQuote": "A hacker used a compromised employee GitHub account to push malicious code and steal customer records",
+   "attackSurface": "GitHub / CI-CD",
+   "tldrRootCause": "An attacker took over an employee's GitHub account, pushed malicious code and reached backend systems holding customer records.",
+   "realisticRootCause": "A compromised employee GitHub account was used to push malicious code, which gave access to some backend systems, customer information and internal source code. How the account itself was compromised is not stated; 1Password says vaults and other secrets were not accessed.",
+   "couldThisHappenToMe": "Yes, the same path exists wherever one developer's GitHub account can push code that reaches production or backend systems.",
+   "howItCouldHitYou": "If a GitHub account or token in your organisation is taken over, the attacker can push code that your pipelines build and deploy with cloud credentials.",
+   "lockItDown": [
+    "In GitHub organisation settings, check branch protection or rulesets on default branches: require pull request review and block direct and force pushes, including for admins.",
+    "Review your GitHub account's Sessions, SSH keys and Personal access tokens pages and revoke anything unrecognised or unused."
+   ],
+   "roleAngle": "Even a password manager vendor was breached through a single developer account; the control that matters is whether one account alone can ship code to production.",
+   "playbooks": [
+    "github-tokens",
+    "account-sign-in-review"
+   ],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -349,70 +355,27 @@
      "publishedAt": "2026-11-26T11:50:17.000Z"
     }
    ],
-   "title": "SYS01 infostealer enrols browsers in management to force a mail-stealing extension",
+   "packages": [],
+   "kevProducts": [],
+   "title": "SYS01 infostealer enrols browsers in fake management to force a mail-stealing extension",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
-   "rootCauseBucket": "Phishing / Social Engineering",
+   "rootCauseBucket": "Malware / Infostealer on Endpoint",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "SYS01 infostealer malware delivered through Meta ads is enrolling browsers into enterprise-style management",
-   "attackSurface": "Browser management policies / extensions",
-   "tldrRootCause": "Users are lured by Meta ads into running the SYS01 infostealer, which enrols the browser in management and force-installs an extension.",
-   "realisticRootCause": "A new SYS01 version sets enterprise-style browser management on the victim's machine so it can force-install an extension. That extension steals sensitive data, including Gmail and Outlook emails.",
-   "couldThisHappenToMe": "Yes, if someone on a Mac or Windows laptop runs a download from a malicious Meta ad; unmanaged personal browsers are the most exposed.",
-   "howItCouldHitYou": "A lure from an ad leads to malware on a laptop, which then controls the browser by policy and reads webmail sessions, including any used for work.",
+   "attackSurface": "Browsers / extensions on laptops",
+   "tldrRootCause": "Malware delivered through Meta ads puts the browser under enterprise-style management and force-installs a data-stealing extension.",
+   "realisticRootCause": "A new SYS01 version uses browser management policy to force-install an extension that steals sensitive data, including Gmail and Outlook email. The teaser does not say which browsers or operating systems are affected.",
+   "couldThisHappenToMe": "Yes if someone runs a download from a malicious Meta ad; a browser showing as managed when it should not be is the sign.",
+   "howItCouldHitYou": "A download from a malicious ad on a work or personal laptop could put the browser under attacker policy and read webmail sessions used for SSO and account recovery.",
    "lockItDown": [
-    "Open chrome://management (or edge://management) and confirm the browser is managed only by your own organization, or not at all on personal devices.",
-    "Open chrome://policy and look for force-installed extension entries (ExtensionInstallForcelist) you do not recognise."
+    "Open chrome://management and chrome://policy (or edge://management and edge://policy) and confirm any management or forced-install policy is one your organisation set.",
+    "Review the extensions list for anything you did not install or cannot remove."
    ],
-   "roleAngle": "Browser policy is now a persistence mechanism; unexpected 'managed by your organization' banners on unmanaged devices are a detection signal.",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
-  {
-   "id": "inc-3f8762f309",
-   "cves": [],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 1,
-   "tier1Count": 0,
-   "signalScore": 14,
-   "earliestAt": "2026-11-27T09:29:30.000Z",
-   "latestAt": "2026-11-27T09:29:30.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "thehackernews",
-     "name": "The Hacker News",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 7,
-     "owner": "thehackernews",
-     "title": "Hackers Trojanize Official Q-Dir and DesktopOK Downloads to Deliver Remote Access Malware",
-     "url": "https://thehackernews.com/2026/11/hackers-trojanize-official-q-dir-and.html",
-     "publishedAt": "2026-11-27T09:29:30.000Z"
-    }
+   "roleAngle": "Browser policy enrolment is a persistence spot that most endpoint reviews do not look at.",
+   "playbooks": [
+    "browser-extensions"
    ],
-   "title": "Official Q-Dir and DesktopOK downloads and updates trojanized with remote access malware",
-   "severity": "HIGH",
-   "verdict": "WATCH_HARDEN",
-   "rootCauseBucket": "Supply Chain / 3rd-Party Compromise",
-   "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "tampered with Q-Dir and DesktopOK installation files distributed via the official SoftwareOK website",
-   "attackSurface": "Windows utilities / vendor download and update channel",
-   "tldrRootCause": "Attackers tampered with Q-Dir and DesktopOK installers served from the official SoftwareOK site, including through the update process.",
-   "realisticRootCause": "Researchers describe a software supply chain attack in which malicious files were served both from the official download page and during updates of already installed copies. How the SoftwareOK site or its update channel was compromised is not stated in the excerpt.",
-   "couldThisHappenToMe": "Yes, if any Windows laptop you use or manage has Q-Dir or DesktopOK installed or recently updated.",
-   "howItCouldHitYou": "A Windows laptop that installed or auto-updated either tool could now be running remote access malware, putting cloud, GitHub and SSO sessions on that machine at risk.",
-   "lockItDown": [
-    "Check Windows Settings > Apps > Installed apps, or your endpoint software inventory, for Q-Dir and DesktopOK on Windows laptops.",
-    "If either is present, treat the machine as potentially compromised until checked against the researchers' published indicators, and re-issue credentials and sessions used on it."
-   ],
-   "roleAngle": "Small freeware utilities with their own update channels are a supply chain path that bypasses most package and code review controls.",
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -445,22 +408,27 @@
      "publishedAt": "2026-11-26T15:13:41.000Z"
     }
    ],
-   "title": "PolinRider campaign compromises over 7,600 GitHub repositories owned by real developers",
+   "packages": [],
+   "kevProducts": [],
+   "title": "PolinRider campaign plants malware in over 7,600 GitHub repositories owned by real developers",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
-   "rootCauseBucket": "Unknown / Not Disclosed",
-   "rootCauseBasis": "UNKNOWN",
+   "rootCauseBucket": "Stolen or Leaked Credential / Token",
+   "rootCauseBasis": "INFERRED",
    "evidenceQuote": "",
-   "attackSurface": "GitHub / developer accounts and repositories",
-   "tldrRootCause": "Not disclosed: how the developers' accounts or repos were taken over is not in the excerpt, only that real repos were poisoned with a Python loader.",
-   "realisticRootCause": "Not disclosed in the evidence. Apiiro reports that over 7,600 repositories were compromised, most belonging to real developers rather than throwaway accounts. Some had a Python loader planted that fetches next-stage payloads, and the activity may date back to February 2025.",
-   "couldThisHappenToMe": "Possibly: your own GitHub repos could be poisoned the same way, or you could clone and run code from a repo that already has been.",
-   "howItCouldHitYou": "Either a compromised developer account pushes a loader into a repo you own, or you or your CI pull and run code from one of the poisoned repos.",
+   "attackSurface": "GitHub / developer accounts",
+   "tldrRootCause": "Not stated; since the repos belong to real developers, attackers likely pushed with stolen developer credentials or tokens.",
+   "realisticRootCause": "The reporting says over 7,600 repositories were compromised, some with a Python loader that fetches next-stage payloads, and that the activity may date back to February 2025. How the developers' accounts or machines were first compromised is not in the excerpt; stolen tokens or an infected developer machine is an inference.",
+   "couldThisHappenToMe": "Yes: your GitHub account or a repo you clone could be affected; look for commits you did not make and unfamiliar loader code in dependencies you pull.",
+   "howItCouldHitYou": "Either your own GitHub credentials are used to push malicious code into your repos, or you clone and run a poisoned repo from a legitimate developer and the loader runs on your laptop.",
    "lockItDown": [
-    "Review your GitHub security log, plus personal access tokens, SSH keys and authorized OAuth apps in account settings, for anything you do not recognise.",
-    "Check recent commit history on your repos and on third-party repos you build from for unexpected commits adding or changing Python files."
+    "In GitHub Settings, review the Security log, Sessions, SSH keys and Personal access tokens for anything you do not recognise, and revoke unused tokens.",
+    "Review recent commit history on your repos' default branches for pushes you did not make, particularly changes to config or build files."
    ],
-   "roleAngle": "A repo owned by a legitimate, long-standing developer account is not evidence that its latest commit is trustworthy.",
+   "roleAngle": "The poisoned repos belong to genuine developers, so account age and reputation do not show that a repo is safe.",
+   "playbooks": [
+    "github-tokens"
+   ],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -493,22 +461,27 @@
      "publishedAt": "2026-11-26T17:15:27.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "\"GoodGuys\" phishing uses fake paid expert interviews to steal Google and Okta logins",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
    "rootCauseBucket": "Phishing / Social Engineering",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "steal corporate Google and Okta credentials using fake invitations to paid expert interviews and webinars",
-   "attackSurface": "SSO (Google Workspace / Okta) logins",
-   "tldrRootCause": "Fake invitations to paid expert interviews and webinars, impersonating major brands, lead staff to hand over corporate Google and Okta credentials.",
-   "realisticRootCause": "An ongoing campaign impersonates brands including Google, Nvidia, Accenture and SpaceX and uses interview and webinar invitations as the lure. The teaser does not say how the credentials are captured or whether MFA is bypassed.",
-   "couldThisHappenToMe": "Yes. Security and cloud staff are plausible targets for paid expert interview lures, and the campaign goes after corporate Google and Okta logins.",
-   "howItCouldHitYou": "An invitation reaches you or a colleague, the sign-in step captures SSO credentials, and those credentials open cloud consoles and GitHub behind SSO.",
+   "attackSurface": "SSO (Google Workspace / Okta) sign-in",
+   "tldrRootCause": "Fake invitations to paid expert interviews and webinars, impersonating major brands, lead victims to hand over corporate Google and Okta credentials.",
+   "realisticRootCause": "An ongoing campaign impersonates brands such as Google, Nvidia, Accenture and SpaceX with paid interview or webinar invitations to capture corporate SSO credentials. The teaser does not say how the phishing pages work or whether MFA is bypassed.",
+   "couldThisHappenToMe": "Yes. Security professionals are plausible targets for \"paid expert interview\" lures, and the campaign goes after Google and Okta SSO logins.",
+   "howItCouldHitYou": "An unsolicited invitation to a paid interview or webinar leads to a sign-in page that captures your corporate Google or Okta credentials, which then open everything behind SSO.",
    "lockItDown": [
-    "In the Okta authentication policies or Google Workspace 2-Step Verification settings, confirm that admin and cloud-console access requires a phishing-resistant method (FIDO2 security key or passkey), not push or OTP.",
-    "Review Okta System Log or Google Workspace login audit events for sign-ins from new devices or unfamiliar locations, especially for users who recently received interview or webinar invitations."
+    "In your Google account security page and your Okta account settings, review recent sign-in activity, active sessions and enrolled MFA factors for anything you do not recognise.",
+    "Check that your Google and Okta sign-ins use a phishing-resistant factor (passkey or security key), and treat any interview or webinar invite that asks for a corporate sign-in as suspect."
    ],
-   "roleAngle": "A good example for awareness briefings: the lure flatters professional expertise rather than using the usual invoice or password-reset themes.",
+   "roleAngle": "A lure aimed at professional vanity and side income; worth a short awareness note to staff who get consulting or expert-network requests.",
+   "playbooks": [
+    "account-sign-in-review"
+   ],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -543,70 +516,25 @@
      "publishedAt": "2026-11-27T08:06:58.000Z"
     }
    ],
-   "title": "NFS2ROOT: 12-year-old Linux kernel NFS server flaw allows remote root (CVE-2026-99362)",
+   "packages": [],
+   "kevProducts": [],
+   "title": "NFS2ROOT: 12-year-old Linux kernel NFS server flaw (CVE-2026-99362) allows remote root",
    "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "allows remote attackers to gain root privileges",
-   "attackSurface": "Linux kernel NFS server on cloud hosts and nodes",
-   "tldrRootCause": "A critical flaw in the Linux kernel's NFS server lets a remote attacker gain root; the evidence does not report exploitation in the wild.",
-   "realisticRootCause": "CVE-2026-99362 is in the kernel's Network File System server and has been present for about 12 years. The teaser gives no affected versions, required configuration or patch status.",
-   "couldThisHappenToMe": "Possibly: look for Linux VMs or Kubernetes nodes that run the kernel NFS server (nfsd) and are reachable on the NFS port.",
-   "howItCouldHitYou": "A self-managed Linux host exporting NFS in your cloud accounts, reachable by an attacker over the network, could be taken over as root and used to pivot into workloads and their credentials.",
+   "attackSurface": "Linux kernel NFS server on cloud hosts / K8s nodes",
+   "tldrRootCause": "A flaw in the Linux kernel's NFS server lets a remote attacker gain root; the evidence does not report exploitation in the wild.",
+   "realisticRootCause": "CVE-2026-99362 is a critical, 12-year-old bug in the kernel NFS server component. The teaser does not give the preconditions, affected kernel versions or fix status.",
+   "couldThisHappenToMe": "Possibly, if any Linux instance or Kubernetes node in your cloud accounts runs the kernel NFS server and is reachable by untrusted networks.",
+   "howItCouldHitYou": "A Linux VM or node exporting NFS shares, reachable through a permissive security group or firewall rule, could give a remote attacker root on that host.",
    "lockItDown": [
-    "Review security groups and firewall rules in AWS, GCP and Azure for inbound TCP 2049 (NFS) allowed from wide ranges, and restrict it to known clients.",
-    "Inventory Linux VMs and Kubernetes nodes that run the kernel NFS server, and schedule the distribution's kernel update for them once it is available."
+    "Review AWS security groups, GCP firewall rules and Azure NSGs for inbound rules allowing the NFS port (TCP 2049) from broad ranges, and narrow them to known clients.",
+    "Inventory Linux hosts and K8s nodes that run the kernel NFS server (self-hosted NFS exports, not managed file services) and track your distribution's advisory for CVE-2026-99362."
    ],
-   "roleAngle": "Self-managed NFS exports on cloud VMs are often forgotten; this is a reason to find them.",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
-  {
-   "id": "inc-6fd54d9a5f",
-   "cves": [],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 1,
-   "tier1Count": 1,
-   "signalScore": 8,
-   "earliestAt": "2026-11-25T18:09:06.000Z",
-   "latestAt": "2026-11-25T18:09:06.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "msrc-threat-intel",
-     "name": "Microsoft Security Blog (Threat Intelligence)",
-     "tier": 1,
-     "category": "research",
-     "weight": 8,
-     "owner": "msrc-threat-intel",
-     "title": "What defenders need to know about ARTEX, the agentic AI framework threat actors abuse",
-     "url": "https://www.microsoft.com/en-us/security/blog/2026/11/25/what-defenders-need-to-know-artex-agentic-ai-framework-threat-actors-abuse/",
-     "publishedAt": "2026-11-25T18:09:06.000Z"
-    }
-   ],
-   "title": "Microsoft: ARTEX AI pentest framework abused by state and criminal actors to automate attacks",
-   "severity": "MEDIUM",
-   "verdict": "WATCH_HARDEN",
-   "rootCauseBucket": "Not an Incident (Research / Policy / Legal)",
-   "rootCauseBasis": "UNKNOWN",
-   "evidenceQuote": "",
-   "attackSurface": "Public code repositories / internet-facing systems",
-   "tldrRootCause": "Not a single incident; threat actors use the public ARTEX framework to automate reconnaissance, credential attacks and web exploitation.",
-   "realisticRootCause": "Microsoft reports that multiple state-sponsored and financially motivated groups have integrated ARTEX into their tooling since its July 2026 release. Recent campaigns used it to search public repositories for exposed secrets, enable supply chain compromise and scan internet-facing systems.",
-   "couldThisHappenToMe": "Yes, if secrets are committed to your public GitHub repositories or you have unpatched internet-facing services; this tooling finds both faster.",
-   "howItCouldHitYou": "An automated agent searching public repositories could find a cloud key or token committed to your GitHub organisation and use it against your cloud accounts.",
-   "lockItDown": [
-    "In GitHub organisation settings, confirm secret scanning and push protection are enabled for all repositories, and review any open secret scanning alerts.",
-    "Review Microsoft's post for the ARTEX network and system activity indicators and hunting queries, and check them against your logs."
-   ],
-   "roleAngle": "Automation shortens the time between a secret being exposed in a public repository and it being used.",
+   "roleAngle": "Managed file services are a different code path from self-hosted kernel NFS exports; the first job is finding who still runs their own.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -639,22 +567,25 @@
      "publishedAt": "2026-11-27T11:49:34.000Z"
     }
    ],
-   "title": "Fake snipping-tool site leads to Microsoft Store app that delivers Vinci RAT",
-   "severity": "MEDIUM",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Fake snipping-tool site uses Microsoft Store app and signed installer to deliver Vinci RAT",
+   "severity": "HIGH",
    "verdict": "WATCH_HARDEN",
    "rootCauseBucket": "Phishing / Social Engineering",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "begins with a redirection to a bogus site for a sniping tool",
-   "attackSurface": "Windows laptops / Microsoft Store apps",
-   "tldrRootCause": "Users are redirected to a fake snipping-tool site that serves a Microsoft-signed installer, and a Microsoft Store app delivers the Vinci RAT.",
-   "realisticRootCause": "eSentire reports that the chain starts at snipp.codes-team[.]com, which serves a Microsoft-signed \"Snipping-Tool.exe\". The teaser is cut off, so the steps between the installer and the RAT are not in the evidence.",
-   "couldThisHappenToMe": "Yes, on Windows laptops where users can install Store apps or run downloaded installers, since a Microsoft signature makes the file look trustworthy.",
-   "howItCouldHitYou": "Someone on a Windows laptop searching for a screenshot tool lands on the fake site and installs the app, giving the attacker remote control of a machine that holds cloud and GitHub sessions.",
+   "attackSurface": "Windows endpoints / Microsoft Store apps",
+   "tldrRootCause": "Victims are redirected to a bogus snipping-tool site that serves a Microsoft-signed installer, leading to the Vinci remote access trojan.",
+   "realisticRootCause": "According to eSentire, the chain starts with a redirect to a fake snipping-tool site and a Microsoft-signed installer named \"Snipping-Tool.exe\", using a Microsoft Store application as the delivery vehicle. The excerpt cuts off before the later stages.",
+   "couldThisHappenToMe": "Yes, on Windows laptops: a signed, Store-delivered installer for a common utility would pass most casual trust checks.",
+   "howItCouldHitYou": "A user looking for a screenshot tool is redirected to the fake site and runs the signed installer, which gives the attacker remote control of a laptop holding cloud and SSO sessions.",
    "lockItDown": [
-    "Check Intune or Group Policy to see whether Microsoft Store installs on managed Windows devices are restricted to an approved list.",
-    "Search EDR and DNS logs for the domain snipp.codes-team[.]com and for executions of a file named Snipping-Tool.exe from user download folders."
+    "On Windows laptops, look in Settings > Apps > Installed apps and the Downloads folder for an unexpected snipping tool or a file named \"Snipping-Tool.exe\" that did not come with Windows.",
+    "Search DNS or web proxy logs for the fake site domain named in the report (snipp.codes-team[.]com)."
    ],
-   "roleAngle": "A Microsoft signature or Store listing is not proof an app is safe; allowlisting by publisher alone would not have stopped this.",
+   "roleAngle": "A Microsoft signature and Store origin are not proof of safety; worth checking whether endpoint policy restricts which Store apps users may install.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -687,22 +618,155 @@
      "publishedAt": "2026-11-26T10:57:55.000Z"
     }
    ],
-   "title": "Vendor research: phishing kits ranked by how often they get past email and web filtering",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Vendor research: phishing kits that most often get past email and web filtering",
    "severity": "MEDIUM",
    "verdict": "WATCH_HARDEN",
    "rootCauseBucket": "Not an Incident (Research / Policy / Legal)",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "we measure this as breakthrough rate: The share of attacks that get past email security, web gateways, and safe browsing to reach the user",
+   "evidenceQuote": "At Push Security, we measure this as breakthrough rate",
    "attackSurface": "SSO / browser sign-in",
-   "tldrRootCause": "No specific compromise; Push Security research on phishing kits that get past email security, web gateways and safe browsing.",
-   "realisticRootCause": "The piece measures how often phishing kits reach the user despite filtering controls. The excerpt does not name the kits or the evasion techniques.",
-   "couldThisHappenToMe": "Yes in principle: any SSO login reachable from a browser is a phishing target, and this research says filtering alone often does not stop the page arriving.",
-   "howItCouldHitYou": "A phishing page that gets past mail and web filtering reaches your browser and captures an SSO session, which then opens cloud consoles and GitHub.",
+   "tldrRootCause": "No specific compromise; vendor research on phishing kits that evade email security, web gateways and safe browsing.",
+   "realisticRootCause": "Push Security ranks phishing kits by how often they get past email security, web gateways and safe browsing to reach the user. The excerpt cuts off before naming kits or techniques.",
+   "couldThisHappenToMe": "Yes in principle: any SSO or GitHub sign-in that accepts a password plus a code or push can be phished if a kit reaches your browser.",
+   "howItCouldHitYou": "A phishing page that gets past filtering reaches your browser and captures your SSO sign-in or session, which then opens cloud consoles and GitHub.",
    "lockItDown": [
-    "In your identity provider's authentication or conditional access policy, confirm admin and cloud-console roles require a phishing-resistant method (passkey or FIDO2 key), with no fallback to push or OTP.",
-    "Review the IdP sign-in log for recent successful logins from unfamiliar devices or locations on privileged accounts."
+    "In your identity provider's authentication policy, check whether admin and cloud-console sign-ins require a passkey or FIDO2 key, not push or one-time codes.",
+    "Review the authorised OAuth apps and active sessions on your SSO and GitHub account pages and remove any you do not recognise."
    ],
-   "roleAngle": "Useful evidence that filtering is not a sufficient phishing control and that authentication strength is the control that holds.",
+   "roleAngle": "Filtering controls are measurably bypassed, so phishing-resistant sign-in is the control that still holds when a page gets through.",
+   "playbooks": [
+    "account-sign-in-review"
+   ],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-34414021c7",
+   "cves": [
+    "CVE-2026-136716",
+    "CVE-2026-132165"
+   ],
+   "isKev": true,
+   "kevRansomware": false,
+   "corroborationCount": 3,
+   "tier1Count": 1,
+   "signalScore": 109,
+   "earliestAt": "2026-11-26T07:02:34.000Z",
+   "latestAt": "2026-11-27T10:10:15.000Z",
+   "firstSeenAt": "2026-11-27T16:50:26.225Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "cisa-kev",
+     "name": "CISA KEV (Active Exploitation)",
+     "tier": 1,
+     "category": "exploitation",
+     "weight": 10,
+     "owner": "cisa-kev",
+     "title": "CISA KEV: Drupal Core — Drupal Core Improper Check for Unusual or Exceptional Conditions Vulnerability (CVE-2026-136716)",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-136716",
+     "publishedAt": "2026-11-27T00:00:00.000Z"
+    },
+    {
+     "id": "bleepingcomputer",
+     "name": "BleepingComputer",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 9,
+     "owner": "bleepingcomputer",
+     "title": "Drupal warns of new site takeover flaw exploited in attacks",
+     "url": "https://www.bleepingcomputer.com/news/security/drupal-warns-of-new-access-bypass-flaw-exploited-in-attacks/",
+     "publishedAt": "2026-11-27T10:10:15.000Z"
+    },
+    {
+     "id": "thehackernews",
+     "name": "The Hacker News",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 7,
+     "owner": "thehackernews",
+     "title": "Drupal Warns of New Highly Critical Site Takeover Vulnerability Under Active Exploitation",
+     "url": "https://thehackernews.com/2026/11/drupal-warns-of-new-highly-critical.html",
+     "publishedAt": "2026-11-26T07:02:34.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [
+    "Drupal Core"
+   ],
+   "title": "Drupal core installer flaw (CVE-2026-136716) exploited for unauthenticated site takeover",
+   "severity": "HIGH",
+   "verdict": "CUSTOMER_BRIEF",
+   "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
+   "rootCauseBasis": "DISCLOSED",
+   "evidenceQuote": "allows an unauthenticated remote attacker to take over a site via the exposed Drupal installer",
+   "attackSurface": "Drupal CMS / web installer",
+   "tldrRootCause": "Attackers reach an exposed Drupal installer on sites left in an incomplete installation state and take the site over without logging in.",
+   "realisticRootCause": "Drupal core does not properly handle unusual or incomplete installation states, so the installer remains reachable and can be abused by an unauthenticated remote attacker. It follows an earlier related flaw, CVE-2026-132165 (Fail2Install), and addresses remaining vulnerable states.",
+   "couldThisHappenToMe": "Only if you host Drupal sites; look for Drupal core instances in your cloud accounts with the installer reachable from the internet.",
+   "howItCouldHitYou": "Drupal is not in your stated footprint, so there is no direct path unless a team runs a Drupal site on your cloud infrastructure.",
+   "lockItDown": [],
+   "roleAngle": "A second exploited Drupal installer flaw in a short span, on CISA KEV with a 30 November deadline; useful prompt to ask who owns web CMS patching.",
+   "playbooks": [],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-aca8844d8d",
+   "cves": [
+    "CVE-2026-120705",
+    "CVE-2026-129243"
+   ],
+   "isKev": true,
+   "kevRansomware": false,
+   "corroborationCount": 1,
+   "tier1Count": 1,
+   "signalScore": 47,
+   "earliestAt": "2026-11-27T00:00:00.000Z",
+   "latestAt": "2026-11-27T00:00:00.000Z",
+   "firstSeenAt": "2026-11-27T18:07:00.932Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "cisa-kev",
+     "name": "CISA KEV (Active Exploitation)",
+     "tier": 1,
+     "category": "exploitation",
+     "weight": 10,
+     "owner": "cisa-kev",
+     "title": "CISA KEV: OSGeo GeoServer — OSGeo GeoServer XML Injection Vulnerability (CVE-2026-120705)",
+     "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-120705",
+     "publishedAt": "2026-11-27T00:00:00.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [
+    "OSGeo GeoServer"
+   ],
+   "title": "GeoServer flaws (CVE-2026-120705, CVE-2026-129243) added to CISA KEV; chain gives RCE",
+   "severity": "HIGH",
+   "verdict": "CUSTOMER_BRIEF",
+   "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
+   "rootCauseBasis": "DISCLOSED",
+   "evidenceQuote": "via a crafted ID parameter in the WFS 2.0 GetFeatureById stored query",
+   "attackSurface": "GeoServer / geospatial web service",
+   "tldrRootCause": "Unauthenticated attackers send crafted WFS requests to GeoServer to read local files or make it fetch URLs, chainable to code execution.",
+   "realisticRootCause": "An XML injection in the WFS 2.0 GetFeatureById stored query allows local file reads and server-side requests, and a separate authorisation flaw bypasses service-level role checks via a prefixed service parameter. CISA says these chain with three other CVEs to unauthenticated remote code execution.",
+   "couldThisHappenToMe": "Only if you run GeoServer; look for GeoServer containers or VMs with WFS endpoints exposed in your cloud or Kubernetes environments.",
+   "howItCouldHitYou": "GeoServer is not in your stated footprint; the risk exists only if a data or mapping team has deployed it on your cloud, where the server-side request ability could reach internal services.",
+   "lockItDown": [],
+   "roleAngle": "The server-side fetch element matters in cloud settings, since such flaws can be used to reach internal endpoints from a compromised workload.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -746,19 +810,22 @@
      "publishedAt": "2026-11-27T05:48:20.000Z"
     }
    ],
-   "title": "Unpatched Cacti zero-day with public PoC allows unauthenticated remote code execution",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Unpatched Cacti zero-day with public PoC allows unauthenticated command execution",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "lets unauthenticated attackers execute commands on vulnerable servers",
-   "attackSurface": "Network monitoring server (Cacti)",
-   "tldrRootCause": "A publicly disclosed, unpatched Cacti flaw lets an unauthenticated HTTP session reach command execution; no attacks are reported yet.",
-   "realisticRootCause": "The proof of concept, tracked as 4HTTP2SHELL and 4HTTP2ROOT, reportedly reaches command execution in four HTTP requests via guest access. It has no CVE identifier, and the evidence does not report exploitation in the wild.",
-   "couldThisHappenToMe": "Only if someone runs Cacti in your environment; look for Cacti instances reachable from the internet or with guest access enabled.",
-   "howItCouldHitYou": "Cacti is not in your stated footprint, so there is no direct path unless an operations team hosts it on infrastructure you cover.",
+   "evidenceQuote": "proof-of-concept exploit that lets unauthenticated attackers execute commands on vulnerable servers",
+   "attackSurface": "Cacti network monitoring server",
+   "tldrRootCause": "A publicly disclosed, unpatched flaw lets an unauthenticated HTTP session reach command execution on Cacti servers via guest access.",
+   "realisticRootCause": "The PoC, tracked as 4HTTP2SHELL and 4HTTP2ROOT, reportedly needs four HTTP requests and relies on guest access. No CVE or patch exists yet, and the evidence does not report exploitation in the wild.",
+   "couldThisHappenToMe": "Only if you or your network team runs Cacti; check whether its web interface is internet-reachable and whether guest access is enabled.",
+   "howItCouldHitYou": "Cacti is not in your stated footprint; a path exists only if a monitoring server in your environment is exposed, where it would give a foothold with network device credentials.",
    "lockItDown": [],
-   "roleAngle": "With a public PoC and no patch, exposed Cacti servers are likely to be targeted soon.",
+   "roleAngle": "With a public PoC and no patch, anyone running Cacti has to rely on restricting access rather than on a fix.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -767,73 +834,14 @@
    "isNew": false
   },
   {
-   "id": "inc-34414021c7",
-   "cves": [
-    "CVE-2026-136716",
-    "CVE-2026-132165"
-   ],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 2,
-   "tier1Count": 0,
-   "signalScore": 52,
-   "earliestAt": "2026-11-26T07:02:34.000Z",
-   "latestAt": "2026-11-27T10:10:15.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "bleepingcomputer",
-     "name": "BleepingComputer",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 9,
-     "owner": "bleepingcomputer",
-     "title": "Drupal warns of new site takeover flaw exploited in attacks",
-     "url": "https://www.bleepingcomputer.com/news/security/drupal-warns-of-new-access-bypass-flaw-exploited-in-attacks/",
-     "publishedAt": "2026-11-27T10:10:15.000Z"
-    },
-    {
-     "id": "thehackernews",
-     "name": "The Hacker News",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 7,
-     "owner": "thehackernews",
-     "title": "Drupal Warns of New Highly Critical Site Takeover Vulnerability Under Active Exploitation",
-     "url": "https://thehackernews.com/2026/11/drupal-warns-of-new-highly-critical.html",
-     "publishedAt": "2026-11-26T07:02:34.000Z"
-    }
-   ],
-   "title": "Drupal core site takeover flaw (CVE-2026-136716) exploited in the wild",
-   "severity": "HIGH",
-   "verdict": "CUSTOMER_BRIEF",
-   "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
-   "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "attackers are exploiting a second critical vulnerability that lets them breach and hijack unpatched websites",
-   "attackSurface": "Drupal core / public web CMS",
-   "tldrRootCause": "Attackers exploit a highly critical Drupal core flaw tied to leftover vulnerable installation states to take over unpatched sites.",
-   "realisticRootCause": "CVE-2026-136716 is described as improper checking for unusual or exceptional conditions in Drupal core. It addresses installation states left vulnerable after the earlier CVE-2026-132165 (Fail2Install) fix, and Drupal says it has been exploited in the wild.",
-   "couldThisHappenToMe": "Only if you host Drupal sites; check whether any cloud-hosted web property runs Drupal core and has not taken the latest security release.",
-   "howItCouldHitYou": "Drupal is not in your stated footprint, so there is no direct path unless a marketing or documentation site in your cloud accounts runs it.",
-   "lockItDown": [],
-   "roleAngle": "A second actively exploited flaw following an incomplete fix is a reminder to re-check systems already patched for the first one.",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
-  {
-   "id": "inc-2c0a97c982",
+   "id": "inc-1ba048d491",
    "cves": [],
    "isKev": false,
    "kevRansomware": false,
-   "corroborationCount": 2,
+   "corroborationCount": 3,
    "tier1Count": 0,
-   "signalScore": 37,
-   "earliestAt": "2026-11-27T13:02:10.000Z",
+   "signalScore": 53,
+   "earliestAt": "2026-11-27T11:52:53.000Z",
    "latestAt": "2026-11-27T15:09:40.000Z",
    "firstSeenAt": "2026-11-27T16:50:26.225Z",
    "isRoundup": false,
@@ -859,8 +867,21 @@
      "title": "Hackers breach US Air Force Cloud One platform, putting military data at risk",
      "url": "https://databreaches.net/2026/11/27/hackers-breach-us-air-force-cloud-one-platform-putting-military-data-at-risk/",
      "publishedAt": "2026-11-27T13:02:10.000Z"
+    },
+    {
+     "id": "hn-security",
+     "name": "Hacker News (Security Signal)",
+     "tier": 2,
+     "category": "social",
+     "weight": 6,
+     "owner": "hn-security",
+     "title": "Hackers breach US Air Force flagship Cloud One computing platform",
+     "url": "https://www.reuters.com/world/hackers-breach-us-air-force-flagship-cloud-one-computing-platform-2026-11-27/",
+     "publishedAt": "2026-11-27T11:52:53.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "US Air Force Cloud One platform reportedly breached; cause not disclosed",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
@@ -868,12 +889,13 @@
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
    "attackSurface": "Government cloud platform",
-   "tldrRootCause": "Not disclosed. Reuters sources say the Cloud One platform was breached; the intrusion was found during upgrade work.",
-   "realisticRootCause": "Not disclosed. Three people familiar with the matter told Reuters the intrusion was discovered within the past month or so during work to upgrade the system, and that tactical, personnel and logistics data could be at risk. No access method or actor is given.",
-   "couldThisHappenToMe": "Cannot be assessed from the evidence, since no technique is described; there is no direct link to your own environment.",
-   "howItCouldHitYou": "No path to this reader is evident; this is a separate government platform and the entry method is not public.",
+   "tldrRootCause": "Not disclosed. Reuters sources say the intrusion was found during upgrade work in roughly the past month.",
+   "realisticRootCause": "Not disclosed. The reporting cites three people familiar with the matter and says the intrusion was discovered during work to upgrade the system; no entry method, actor or confirmed data loss is given in the evidence.",
+   "couldThisHappenToMe": "Cannot be judged from the reporting, as no entry method has been made public.",
+   "howItCouldHitYou": "There is no direct path to you; this is a US government-run cloud platform and the technique is unknown.",
    "lockItDown": [],
-   "roleAngle": "Worth noting that the intrusion was found during an upgrade and not by detection tooling; watch for a disclosed cause before drawing lessons.",
+   "roleAngle": "A breach found only during an upgrade suggests a detection gap in a large cloud platform, though details are unconfirmed and sourced anonymously.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -906,19 +928,70 @@
      "publishedAt": "2026-11-26T11:35:25.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "Mitel MiCollab zero-days exploited before advisory in suspected extortion campaign",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "hackers exploited MiCollab flaws before Mitel’s advisory, likely aided by AI, in a suspected extortion campaign",
+   "evidenceQuote": "hackers exploited MiCollab flaws before Mitel’s advisory",
    "attackSurface": "Mitel MiCollab / unified communications server",
-   "tldrRootCause": "Attackers exploited flaws in Mitel MiCollab as zero-days, before the vendor published its advisory.",
-   "realisticRootCause": "Accenture reports that MiCollab flaws were exploited before Mitel's advisory, in what it suspects is an extortion campaign with possible AI assistance. The evidence gives no CVE ids or details of the flaws.",
-   "couldThisHappenToMe": "Only if your organisation runs Mitel MiCollab; it is not part of your cloud, GitHub, SSO or endpoint footprint.",
-   "howItCouldHitYou": "No direct path to your footprint; exposure would exist only through a Mitel MiCollab server run by a telephony or collaboration team.",
+   "tldrRootCause": "Attackers exploited previously unknown flaws in Mitel MiCollab before the vendor published its advisory.",
+   "realisticRootCause": "Accenture reports that MiCollab flaws were exploited as zero-days, likely with AI assistance, in a suspected extortion campaign. The teaser gives no CVE ids or detail on the flaw types.",
+   "couldThisHappenToMe": "Only if your organisation runs Mitel MiCollab; check with whoever owns telephony and collaboration systems.",
+   "howItCouldHitYou": "MiCollab is not in your stated footprint, so there is no direct path to your cloud, GitHub or endpoints from this.",
    "lockItDown": [],
-   "roleAngle": "The AI-assistance claim is Accenture's suspicion from a single source, so treat it as unconfirmed when briefing others.",
+   "roleAngle": "Another case of exploitation ahead of a vendor advisory, with a claim of AI-assisted exploit development that is suspected rather than proven.",
+   "playbooks": [],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-3f8762f309",
+   "cves": [],
+   "isKev": false,
+   "kevRansomware": false,
+   "corroborationCount": 1,
+   "tier1Count": 0,
+   "signalScore": 14,
+   "earliestAt": "2026-11-27T09:29:30.000Z",
+   "latestAt": "2026-11-27T09:29:30.000Z",
+   "firstSeenAt": "2026-11-27T16:50:26.225Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "thehackernews",
+     "name": "The Hacker News",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 7,
+     "owner": "thehackernews",
+     "title": "Hackers Trojanize Official Q-Dir and DesktopOK Downloads to Deliver Remote Access Malware",
+     "url": "https://thehackernews.com/2026/11/hackers-trojanize-official-q-dir-and.html",
+     "publishedAt": "2026-11-27T09:29:30.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [],
+   "title": "Q-Dir and DesktopOK installers and updates on official SoftwareOK site trojanized",
+   "severity": "HIGH",
+   "verdict": "CUSTOMER_BRIEF",
+   "rootCauseBucket": "Supply Chain / 3rd-Party Compromise",
+   "rootCauseBasis": "DISCLOSED",
+   "evidenceQuote": "software supply chain attack that has tampered with Q-Dir and DesktopOK installation files distributed via the official SoftwareOK website",
+   "attackSurface": "Windows utility downloads / update channel",
+   "tldrRootCause": "Installers for Q-Dir and DesktopOK served from the vendor's official site, and via the update process, were tampered with to deliver remote access malware.",
+   "realisticRootCause": "The reporting describes malicious files being served both from the official download page and during updates of already installed copies. How the SoftwareOK site or its distribution was compromised is not stated in the excerpt.",
+   "couldThisHappenToMe": "Only if a Windows laptop in your fleet has Q-Dir or DesktopOK installed or recently updated; look for those two program names in software inventory.",
+   "howItCouldHitYou": "A user who downloaded or auto-updated either utility during the affected window could have a remote access trojan on a Windows endpoint that holds cloud and SSO sessions.",
+   "lockItDown": [],
+   "roleAngle": "Shows that an official download site and an in-app updater can both be the delivery path, so vendor trust alone is not a control.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -951,19 +1024,22 @@
      "publishedAt": "2026-11-27T06:04:20.000Z"
     }
    ],
-   "title": "Swiss cyber agency confirms AI-agent-assisted intrusions, including two at critical infrastructure",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Switzerland confirms attackers using AI agents breached organisations in four of five attacks",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Unknown / Not Disclosed",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
-   "attackSurface": "Swiss organisations / critical infrastructure IT",
-   "tldrRootCause": "Not disclosed. The agency says attackers used AI agents, but the evidence gives no entry method or exploited weakness.",
-   "realisticRootCause": "Initial access is not disclosed. Four of five confirmed AI-assisted attacks succeeded, including two of three against critical infrastructure operators, with no major disruption; victims and actor are unnamed.",
-   "couldThisHappenToMe": "Cannot be judged from the evidence: no technology, vulnerability or entry technique is named.",
-   "howItCouldHitYou": "There is no specific path to trace; the report confirms attackers used AI agents but not what they exploited.",
+   "attackSurface": "Critical infrastructure operators",
+   "tldrRootCause": "Not disclosed. The Swiss cybersecurity agency says attackers used AI agents but the entry method and victims are not given.",
+   "realisticRootCause": "The evidence states that attackers using AI agents broke into systems in four of five confirmed attacks, with two of three critical infrastructure targets breached and no major disruption. How the agents gained access is not described.",
+   "couldThisHappenToMe": "Cannot be told from the evidence; no technology, weakness or victim is named.",
+   "howItCouldHitYou": "No specific path can be traced because the entry technique is not described; the report is about attacker tooling, not a named product.",
    "lockItDown": [],
-   "roleAngle": "A government agency confirming successful AI-agent-assisted intrusions is a notable data point for threat-model discussions.",
+   "roleAngle": "A government agency confirming successful AI-agent-driven intrusions is a notable data point for briefings on attacker speed and scale.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -998,19 +1074,22 @@
      "publishedAt": "2026-11-26T13:04:06.000Z"
     }
    ],
-   "title": "Critical Juniper Session Smart Conductor flaw (CVE-2026-103406) exploited in attacks",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Juniper Session Smart Conductor flaw (CVE-2026-103406) exploited for root command execution",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "the vulnerability allows remote attackers to execute arbitrary commands as root",
-   "attackSurface": "Network management appliance (Juniper Session Smart Conductor)",
-   "tldrRootCause": "Remote attackers exploit CVE-2026-103406 in Juniper Session Smart Conductor to run arbitrary commands as root.",
-   "realisticRootCause": "The flaw allows remote command execution as root on Juniper Session Smart Conductor, and the headline reports it is being exploited in attacks. The evidence does not describe the vulnerable component or any preconditions.",
-   "couldThisHappenToMe": "Only if your network team runs Juniper Session Smart Conductor or Session Smart Routers; it is not in your cloud and endpoint footprint.",
-   "howItCouldHitYou": "No direct path to your footprint; exposure would exist only if this Juniper SD-WAN management product is used for connectivity into your cloud environments.",
+   "attackSurface": "Network management appliance",
+   "tldrRootCause": "Remote attackers exploit a critical flaw in Juniper Session Smart Conductor to run arbitrary commands as root.",
+   "realisticRootCause": "CVE-2026-103406 allows remote arbitrary command execution as root on Juniper Session Smart Conductor and is reported as exploited in attacks. The teaser does not say whether authentication is required or describe the flaw type.",
+   "couldThisHappenToMe": "Only if your network team runs Juniper Session Smart Conductor or Session Smart Routers; it is not part of your cloud or endpoint stack.",
+   "howItCouldHitYou": "There is no direct path through your stated footprint; the risk would be indirect, via a compromised network controller in front of your environments.",
    "lockItDown": [],
-   "roleAngle": "Root command execution on a network management plane is a peer-brief item for anyone whose cloud connectivity depends on SD-WAN.",
+   "roleAngle": "Network management controllers remain a favoured target because root on the controller means control of the routers it manages.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1043,6 +1122,8 @@
      "publishedAt": "2026-11-25T22:05:09.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "Attackers chain PHP2Shell and Fragnesia flaws against exposed PAN-OS management interfaces",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
@@ -1050,12 +1131,13 @@
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "chaining exploits for the PHP2Shell and Fragnesia vulnerabilities to target Palo Alto Networks devices with management interfaces exposed to the internet",
    "attackSurface": "Edge appliance (PAN-OS management interface)",
-   "tldrRootCause": "Attackers chain exploits for two vulnerabilities, PHP2Shell and Fragnesia, against Palo Alto devices whose management interface is reachable from the internet.",
-   "realisticRootCause": "Palo Alto Networks warned that the Fragnesia flaw is being exploited in PAN-OS attacks, in a chain with PHP2Shell. The teaser gives no CVE ids, affected versions or post-exploitation detail.",
-   "couldThisHappenToMe": "Only if your organisation runs Palo Alto Networks firewalls with the management interface exposed to the internet; PAN-OS is not in your stated footprint.",
-   "howItCouldHitYou": "There is no direct path through your cloud, GitHub or laptop footprint; exposure would come from a network team's PAN-OS devices with internet-reachable management.",
+   "tldrRootCause": "Attackers chain two vulnerabilities, PHP2Shell and Fragnesia, against Palo Alto devices whose management interfaces are reachable from the internet.",
+   "realisticRootCause": "Palo Alto Networks warns of active exploitation that chains the PHP2Shell and Fragnesia flaws. The targets are devices with internet-exposed management interfaces; the teaser gives no CVE ids or impact details.",
+   "couldThisHappenToMe": "Only if your organisation runs Palo Alto Networks devices with the management interface reachable from the internet.",
+   "howItCouldHitYou": "PAN-OS is not in your stated footprint; the path exists only through a firewall whose management interface is internet-facing.",
    "lockItDown": [],
-   "roleAngle": "Another case of an internet-exposed management plane being the precondition; the same principle applies to cloud control planes and Kubernetes API servers.",
+   "roleAngle": "Another case of exposed management planes being the deciding factor; the same question applies to any admin interface in cloud security groups.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1088,19 +1170,22 @@
      "publishedAt": "2026-11-26T06:44:46.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "CISA adds 10 exploited flaws to KEV across Mitel MiCollab, Juniper, Vates and Danfoss",
    "severity": "HIGH",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "added 10 security flaws to its Known Exploited Vulnerabilities (KEV) catalog, including five vulnerabilities impacting Mitel MiCollab that were disclosed last week",
-   "attackSurface": "Collaboration servers / network and virtualisation infrastructure",
-   "tldrRootCause": "Attackers are exploiting known flaws in Mitel MiCollab, Juniper, Vates and Danfoss products; one is an arbitrary file upload in MiCollab.",
-   "realisticRootCause": "CISA added 10 flaws to KEV, meaning exploitation has been observed. Five affect Mitel MiCollab, including CVE-2026-133275 (CVSS 5.3), an arbitrary file upload vulnerability; the excerpt is cut off before details of the Juniper, Vates and Danfoss flaws.",
-   "couldThisHappenToMe": "Only if your organisation runs Mitel MiCollab, Juniper, Vates or Danfoss products; none are in your stated footprint.",
-   "howItCouldHitYou": "There is no direct path to cloud, GitHub, SSO or laptop assets; exposure would come from on-premises telephony, network or virtualisation gear managed elsewhere in the organisation.",
+   "attackSurface": "Enterprise collaboration servers / network and industrial products",
+   "tldrRootCause": "Attackers are exploiting known flaws in Mitel MiCollab, Juniper, Vates and Danfoss products; one MiCollab flaw is an arbitrary file upload.",
+   "realisticRootCause": "CISA added 10 vulnerabilities to its Known Exploited Vulnerabilities catalog, five of them in Mitel MiCollab, including an arbitrary file upload flaw rated CVSS 5.3. The excerpt is cut off before describing the Juniper, Vates and Danfoss flaws or how any of them are being exploited.",
+   "couldThisHappenToMe": "Only if your organisation runs Mitel MiCollab, Juniper, Vates or Danfoss products; none of these are in your listed cloud, GitHub, SSO or laptop footprint.",
+   "howItCouldHitYou": "There is no direct path to your cloud accounts, GitHub, SSO or laptops from the evidence; exposure would come only through separately managed telephony, network, virtualisation or industrial systems running these products.",
    "lockItDown": [],
-   "roleAngle": "Five MiCollab flaws went from disclosure to the KEV catalog within about a week, a useful example of how short patch windows are for exposed collaboration servers.",
+   "roleAngle": "Five MiCollab flaws moved from disclosure to the KEV catalog within about a week, a useful data point on how short patch windows are for collaboration servers.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1133,19 +1218,22 @@
      "publishedAt": "2026-11-26T23:45:35.000Z"
     }
    ],
-   "title": "Risky Bulletin (multi-story): Erlang and Elixir package manager hacked",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Risky Bulletin (multi-story): Erlang and Elixir package manager breached",
    "severity": "MEDIUM",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Unknown / Not Disclosed",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
    "attackSurface": "Package registry (Erlang/Elixir)",
-   "tldrRootCause": "Not disclosed; the bulletin teaser says only that the Erlang and Elixir package manager was hacked.",
-   "realisticRootCause": "Not disclosed. The teaser gives no detail on how the package manager was breached or whether any published packages were tampered with.",
-   "couldThisHappenToMe": "Only if your code or pipelines pull Erlang or Elixir packages; the teaser does not say whether packages were altered.",
-   "howItCouldHitYou": "A registry compromise could reach you through dependencies, but Erlang and Elixir are not in the stated footprint and package tampering is not confirmed.",
+   "tldrRootCause": "Not disclosed; the bulletin teaser only says the Erlang and Elixir package manager was hacked.",
+   "realisticRootCause": "Not disclosed. The teaser gives no detail on how the package manager was breached or whether any packages were tampered with.",
+   "couldThisHappenToMe": "Only if your projects pull Erlang or Elixir packages; the teaser does not say whether packages were altered.",
+   "howItCouldHitYou": "No direct path unless you build Erlang or Elixir code. The same bulletin says 1Password was compromised through an employee's GitHub account, which is a pattern closer to your footprint.",
    "lockItDown": [],
-   "roleAngle": "The same bulletin says 1Password was compromised through an employee's GitHub account; no detail is given, but it is a relevant talking point on personal GitHub account hygiene.",
+   "roleAngle": "The bulletin's mention of 1Password being breached via an employee's GitHub account is worth following up in the full notes.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1178,19 +1266,22 @@
      "publishedAt": "2026-11-26T13:18:46.000Z"
     }
    ],
-   "title": "Flight Centre investigates breach of third-party booking system; passport details may be exposed",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Flight Centre investigates breach of third-party booking system exposing customer records",
    "severity": "MEDIUM",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Supply Chain / 3rd-Party Compromise",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "a cyber incident involving a third-party accommodation booking system",
+   "evidenceQuote": "investigating a cyber incident involving a third-party accommodation booking system",
    "attackSurface": "Third-party SaaS booking platform",
-   "tldrRootCause": "Unusual activity in a third-party accommodation booking platform used by several Flight Centre brands; how that platform was accessed is not stated.",
-   "realisticRootCause": "Flight Centre disclosed the incident on November 26 after detecting unusual activity in a platform used by its leisure travel brands. The excerpt says a significant number of customer records may be exposed; the headline adds passport details. The third-party vendor and the entry method are not named.",
-   "couldThisHappenToMe": "Not through your technology; you would be affected only as a customer of Flight Centre's leisure travel brands.",
-   "howItCouldHitYou": "There is no path to your cloud, GitHub or SSO footprint; the incident sits in a travel industry vendor platform.",
+   "tldrRootCause": "Unusual activity was detected in a third-party accommodation booking platform used by several Flight Centre leisure brands.",
+   "realisticRootCause": "The incident sits in a third-party platform rather than Flight Centre's own systems. How that platform was accessed is not stated in the excerpt; customer records and passport details may be exposed.",
+   "couldThisHappenToMe": "Not directly; the affected system is a travel booking platform outside your stack, though the third-party data exposure pattern is common.",
+   "howItCouldHitYou": "There is no direct path to your environment; the relevance is as an example of customer data held in a vendor's platform being exposed.",
    "lockItDown": [],
-   "roleAngle": "Another case where customer data was exposed through a vendor-run platform outside the company's own security perimeter.",
+   "roleAngle": "A useful example when discussing which third-party platforms hold your regulated data and how you would learn of unusual activity in them.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1223,64 +1314,22 @@
      "publishedAt": "2026-11-27T13:02:05.000Z"
     }
    ],
-   "title": "Barclays Bank Delaware confirms breach exposing credit card application data",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Barclays' US banking arm notifies customers of breach exposing credit card application data",
    "severity": "MEDIUM",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Unknown / Not Disclosed",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
-   "attackSurface": "Bank customer data systems",
-   "tldrRootCause": "Not disclosed. The teaser confirms credit card application data was exposed but cuts off before describing how.",
-   "realisticRootCause": "Not disclosed. Barclays' US subsidiary is notifying affected customers and authorities; the available text does not say how the data was accessed or whether a third party was involved.",
-   "couldThisHappenToMe": "Cannot be judged from the evidence, as no technique or technology is named.",
-   "howItCouldHitYou": "There is no path to this reader's environment; this is a consumer data breach at a bank with no stated cause.",
+   "attackSurface": "Bank customer data",
+   "tldrRootCause": "Not disclosed. The teaser says credit card application data was exposed but cuts off before any cause.",
+   "realisticRootCause": "Not disclosed in the evidence. Barclays Bank Delaware is notifying affected customers and authorities that credit card application data was exposed; how the attacker got access is not stated.",
+   "couldThisHappenToMe": "Not through your own stack; it only matters personally if you applied for a Barclays US credit card.",
+   "howItCouldHitYou": "There is no path to your cloud, GitHub or endpoint footprint; the exposure is consumer data held by the bank.",
    "lockItDown": [],
-   "roleAngle": "A peer talking point on financial-sector breach notifications; watch for a follow-up that names the cause.",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
-  {
-   "id": "inc-8a668eb29f",
-   "cves": [],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 1,
-   "tier1Count": 0,
-   "signalScore": 11,
-   "earliestAt": "2026-11-25T21:14:48.000Z",
-   "latestAt": "2026-11-25T21:14:48.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "masto-dormann",
-     "name": "Social: Will Dormann (@wdormann)",
-     "tier": 2,
-     "category": "social",
-     "weight": 7,
-     "owner": "masto-dormann",
-     "title": "File under \"Will is not surprised\": Security product vendor Checkpoint compromised by use of JavaScript math.random() fu",
-     "url": "https://infosec.exchange/@wdormann/117679147467953653",
-     "publishedAt": "2026-11-25T21:14:48.000Z"
-    }
-   ],
-   "title": "Check Point reportedly compromised through insecure use of JavaScript Math.random()",
-   "severity": "MEDIUM",
-   "verdict": "CUSTOMER_BRIEF",
-   "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
-   "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "compromised by use of JavaScript math.random() function in something that could benefit from being cryptographically secure",
-   "attackSurface": "Security vendor product / weak randomness",
-   "tldrRootCause": "A single social post says predictable Math.random() output was used where cryptographically secure randomness was needed.",
-   "realisticRootCause": "The post attributes the compromise to a non-cryptographic random number generator used for a security-sensitive value. It does not say which product or component was affected or what was accessed, and whether the flaw was internet-facing is an assumption.",
-   "couldThisHappenToMe": "Only if you run Check Point products; the evidence does not say which one, so wait for the vendor advisory.",
-   "howItCouldHitYou": "Check Point is not in the stated footprint; the path would run through an affected Check Point product, which the post does not identify.",
-   "lockItDown": [],
-   "roleAngle": "Tokens, session IDs and reset codes generated with Math.random() are predictable; this is a common code-review finding.",
+   "roleAngle": "Another financial-sector breach notice with no cause given yet; worth watching for a follow-up on whether a third party was involved.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1313,19 +1362,22 @@
      "publishedAt": "2026-11-27T07:44:49.000Z"
     }
    ],
-   "title": "Hex.pm package registry flaw allowed command execution on its web servers",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Hex.pm package registry: vulnerability let attackers run commands on web servers",
    "severity": "MEDIUM",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "A vulnerability in hex.pm allowed hackers to run commands on web servers.",
-   "attackSurface": "Package registry (hex.pm, Elixir/Erlang ecosystem)",
-   "tldrRootCause": "A vulnerability in hex.pm let attackers run commands on the registry's web servers; the specific flaw is not described.",
-   "realisticRootCause": "The evidence says a hex.pm vulnerability allowed command execution on its web servers. No data modification was found, but database reads are not logged, so data access cannot be ruled out.",
-   "couldThisHappenToMe": "Only if your teams publish or pull Elixir/Erlang packages from hex.pm; look for mix.exs or rebar.config files and Hex API keys in CI secrets.",
-   "howItCouldHitYou": "Hex is not in your stated footprint; the path would be Hex account data or API keys being read from the registry database if your organisation has Hex accounts.",
+   "attackSurface": "Package registry (hex.pm)",
+   "tldrRootCause": "A vulnerability in the hex.pm service allowed commands to be run on its web servers.",
+   "realisticRootCause": "A flaw in hex.pm gave command execution on the registry's web servers. No evidence of data modification was found, but database reads are not logged, so data access cannot be ruled out.",
+   "couldThisHappenToMe": "Only if you or your teams have hex.pm accounts or build Elixir/Erlang projects that pull packages from Hex.",
+   "howItCouldHitYou": "Hex is not in your stated footprint; exposure would be limited to hex.pm account data or API keys if your teams publish or consume Hex packages.",
    "lockItDown": [],
-   "roleAngle": "A registry that cannot rule out data theft because reads are not logged is a useful example when arguing for read-access logging on your own data stores.",
+   "roleAngle": "A reminder that package registries are themselves targets, and that unlogged database reads leave a breach scope unanswerable.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1358,19 +1410,22 @@
      "publishedAt": "2026-11-27T09:30:54.000Z"
     }
    ],
-   "title": "myColorado digital ID app breached; up to 100,000 users' uploaded data accessed",
+   "packages": [],
+   "kevProducts": [],
+   "title": "myColorado digital ID app breached; about 100,000 users potentially affected",
    "severity": "MEDIUM",
    "verdict": "CUSTOMER_BRIEF",
    "rootCauseBucket": "Unknown / Not Disclosed",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
-   "attackSurface": "Government digital ID / document storage app",
-   "tldrRootCause": "Not disclosed. Attackers breached the myColorado app and accessed user-uploaded data; the method is not given.",
-   "realisticRootCause": "Not disclosed. The evidence says only that hackers breached the digital identification and document storage application and accessed user-uploaded data.",
-   "couldThisHappenToMe": "Not through your work footprint; it affects people who uploaded documents to the myColorado app.",
-   "howItCouldHitYou": "There is no path to the reader's environment; this is a state government application breach with no stated cause.",
+   "attackSurface": "Government digital ID application",
+   "tldrRootCause": "Not disclosed. Hackers breached the myColorado app and accessed user-uploaded data; the method is not stated.",
+   "realisticRootCause": "The evidence says only that hackers breached the digital identification and document storage application myColorado and accessed user-uploaded data. No entry method is given.",
+   "couldThisHappenToMe": "Not through your stack; it matters personally only if you uploaded documents to the myColorado app.",
+   "howItCouldHitYou": "There is no path to your cloud or endpoint footprint; the exposure is to individuals who stored documents in the app.",
    "lockItDown": [],
-   "roleAngle": "Another example of identity-document stores as high-value targets.",
+   "roleAngle": "Another example of identity documents stored in a central app becoming a breach target.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1405,19 +1460,123 @@
      "publishedAt": "2026-11-25T22:24:36.000Z"
     }
    ],
-   "title": "TastyIgniter: admin media manager accepts .htaccess upload, allowing RCE (CVE-2026-69179)",
+   "packages": [
+    {
+     "ecosystem": "composer",
+     "name": "tastyigniter/tastyigniter"
+    }
+   ],
+   "kevProducts": [],
+   "title": "TastyIgniter: admin .htaccess upload in Media Manager leads to RCE (CVE-2026-69179)",
    "severity": "MEDIUM",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
    "evidenceQuote": "Media manager accepts `.htaccess` file which can be used to perform RCE.",
-   "attackSurface": "TastyIgniter admin panel",
-   "tldrRootCause": "A logged-in admin can upload a .htaccess file through the Media Manager and use it to make uploaded files run as PHP.",
-   "realisticRootCause": "The upload filter does not block .htaccess, so an authenticated admin can change the handler for the upload directory and run PHP. The advisory's proof of concept requires an admin login, and no exploitation in the wild is reported.",
-   "couldThisHappenToMe": "Not through the stated footprint; this only matters if you host a TastyIgniter site.",
-   "howItCouldHitYou": "There is no path to this reader unless a TastyIgniter instance runs in an environment they manage, and even then the attacker needs admin credentials first.",
+   "attackSurface": "PHP web application (TastyIgniter)",
+   "tldrRootCause": "The TastyIgniter Media Manager lets a logged-in admin upload a .htaccess file, which can make uploaded files run as PHP.",
+   "realisticRootCause": "This is an unrestricted file upload flaw; the proof of concept requires an admin login first. The advisory describes the vulnerability only and reports no exploitation.",
+   "couldThisHappenToMe": "Only if you host the TastyIgniter restaurant ordering platform; look for the composer package tastyigniter/tastyigniter.",
+   "howItCouldHitYou": "There is no path through your stated footprint: this is a niche PHP application and exploitation needs admin credentials.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-8730e60cbf",
+   "cves": [],
+   "isKev": false,
+   "kevRansomware": false,
+   "corroborationCount": 1,
+   "tier1Count": 0,
+   "signalScore": 13,
+   "earliestAt": "2026-11-27T18:57:42.000Z",
+   "latestAt": "2026-11-27T18:57:42.000Z",
+   "firstSeenAt": "2026-11-27T18:57:45.479Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "bleepingcomputer",
+     "name": "BleepingComputer",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 9,
+     "owner": "bleepingcomputer",
+     "title": "New Boston Scientific data breach exposes personal, medical info",
+     "url": "https://www.bleepingcomputer.com/news/security/new-boston-scientific-data-breach-exposes-personal-medical-info/",
+     "publishedAt": "2026-11-27T18:57:42.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [],
+   "title": "Boston Scientific notifies individuals after cyberattack exposes personal and medical data",
+   "severity": "MEDIUM",
+   "verdict": "NOT_APPLICABLE",
+   "rootCauseBucket": "Unknown / Not Disclosed",
+   "rootCauseBasis": "UNKNOWN",
+   "evidenceQuote": "",
+   "attackSurface": "Corporate network (unspecified)",
+   "tldrRootCause": "Not disclosed. The company is sending breach notices after a cyberattack; how the attackers got in is not stated.",
+   "realisticRootCause": "Not disclosed. The evidence says only that a cyberattack on the firm exposed personal and medical information and that notices are going out.",
+   "couldThisHappenToMe": "Nothing in the evidence ties this to your stack; it matters only if you personally receive a notice from the company.",
+   "howItCouldHitYou": "No technical path to your environment can be identified from the evidence.",
+   "lockItDown": [],
+   "roleAngle": "",
+   "playbooks": [],
+   "validationNotes": [],
+   "inventory": {
+    "checked": false,
+    "matches": []
+   },
+   "isNew": false
+  },
+  {
+   "id": "inc-29e3927e87",
+   "cves": [],
+   "isKev": false,
+   "kevRansomware": false,
+   "corroborationCount": 1,
+   "tier1Count": 0,
+   "signalScore": 12,
+   "earliestAt": "2026-11-27T13:01:43.000Z",
+   "latestAt": "2026-11-27T13:01:43.000Z",
+   "firstSeenAt": "2026-11-27T16:50:26.225Z",
+   "isRoundup": false,
+   "sources": [
+    {
+     "id": "databreaches",
+     "name": "DataBreaches.net",
+     "tier": 2,
+     "category": "breach-news",
+     "weight": 8,
+     "owner": "databreaches",
+     "title": "Korea Scientists and Engineers Mutual-aid Association Hit by Hack, 210,000 Records Leaked",
+     "url": "https://databreaches.net/2026/11/27/korea-scientists-and-engineers-mutual-aid-association-hit-by-hack-210000-records-leaked/",
+     "publishedAt": "2026-11-27T13:01:43.000Z"
+    }
+   ],
+   "packages": [],
+   "kevProducts": [],
+   "title": "Korea Scientists and Engineers Mutual-aid Association breach leaks about 210,000 member records",
+   "severity": "MEDIUM",
+   "verdict": "NOT_APPLICABLE",
+   "rootCauseBucket": "Unknown / Not Disclosed",
+   "rootCauseBasis": "UNKNOWN",
+   "evidenceQuote": "",
+   "attackSurface": "Membership systems (unspecified)",
+   "tldrRootCause": "Not disclosed. The association detected a breach early this month and an outside investigation confirmed about 210,000 records leaked.",
+   "realisticRootCause": "Not disclosed. The evidence covers the detection timeline and the kinds of member data leaked, but not how the attackers got in.",
+   "couldThisHappenToMe": "No link to your stack is evident; this is a regional membership data breach with no stated technique.",
+   "howItCouldHitYou": "No technical path to your environment can be identified from the evidence.",
+   "lockItDown": [],
+   "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1452,19 +1611,27 @@
      "publishedAt": "2026-11-25T22:24:13.000Z"
     }
    ],
-   "title": "TastyIgniter mail template editor allows admin-level RCE via template injection (CVE-2026-69178)",
+   "packages": [
+    {
+     "ecosystem": "composer",
+     "name": "tastyigniter/tastyigniter"
+    }
+   ],
+   "kevProducts": [],
+   "title": "TastyIgniter mail template editor allows RCE by admin users via template injection (CVE-2026-69178)",
    "severity": "MEDIUM",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Exploited Vulnerability (Internet-Facing)",
    "rootCauseBasis": "DISCLOSED",
-   "evidenceQuote": "The Mail templates is vulnerable to SSTI and did not perform an validation and sanitization",
-   "attackSurface": "TastyIgniter admin panel (PHP web app)",
-   "tldrRootCause": "An admin with mail template permission can inject PHP into a template and have the server execute it.",
-   "realisticRootCause": "The mail template body is not validated or sanitised, so server-side template injection gives arbitrary PHP execution when the template is tested. It requires an authenticated admin with the Admin.MailTemplates permission; the advisory reports no exploitation.",
-   "couldThisHappenToMe": "Only if you host TastyIgniter, a restaurant ordering platform; look for the composer package tastyigniter/tastyigniter.",
-   "howItCouldHitYou": "There is no path unless a TastyIgniter instance exists in your estate, and even then the attacker needs an admin account first.",
+   "evidenceQuote": "The Mail templates is vulnerable to SSTI and did not perform an validation and sanitization.",
+   "attackSurface": "TastyIgniter admin panel (PHP / Composer)",
+   "tldrRootCause": "An admin with mail template permission can save a template containing PHP that the server then executes.",
+   "realisticRootCause": "The mail template body in the admin panel is rendered without validation, so a user with the Admin.MailTemplates permission can inject PHP directives and get code execution when the template is tested. It requires an authenticated admin session; no exploitation in the wild is reported.",
+   "couldThisHappenToMe": "Only if you host TastyIgniter; look for the composer package tastyigniter/tastyigniter in any PHP project you run.",
+   "howItCouldHitYou": "There is no path unless you run this restaurant ordering platform, and even then the attacker needs an admin account with mail template rights.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1497,6 +1664,8 @@
      "publishedAt": "2026-11-26T17:06:55.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "FIFA confirms cyberattack that accessed personal and business information",
    "severity": "MEDIUM",
    "verdict": "NOT_APPLICABLE",
@@ -1504,12 +1673,13 @@
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
    "attackSurface": "Not disclosed",
-   "tldrRootCause": "Not disclosed. FIFA confirmed access to personal and business information but gave no cause, timing or detail.",
+   "tldrRootCause": "Not disclosed; FIFA confirmed that personal and business information was accessed but gave no timing or method.",
    "realisticRootCause": "Not disclosed. FIFA did not say when the attack took place or the precise nature of the information accessed.",
-   "couldThisHappenToMe": "Cannot be assessed; no technique or technology has been made public.",
-   "howItCouldHitYou": "There is no identifiable path, because the method of entry is unknown.",
+   "couldThisHappenToMe": "Cannot be assessed; no technique or affected technology has been made public.",
+   "howItCouldHitYou": "There is no identifiable path to your environment from what has been published.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1542,19 +1712,22 @@
      "publishedAt": "2026-11-27T16:36:11.000Z"
     }
    ],
-   "title": "Suspected Vietnam-linked group WeaveLotus targets Southeast Asian governments for espionage",
+   "packages": [],
+   "kevProducts": [],
+   "title": "WeaveLotus espionage campaign targets Southeast Asian military and government bodies",
    "severity": "MEDIUM",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Unknown / Not Disclosed",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
-   "attackSurface": "Government and military networks (Southeast Asia)",
-   "tldrRootCause": "Not disclosed in the excerpt. SOCRadar attributes intrusions against military, government and legislative bodies to a Vietnam-sponsored group.",
-   "realisticRootCause": "Not disclosed. The excerpt describes the targets and the intelligence goal (South China Sea defence and military agreements) but not how the group got in.",
-   "couldThisHappenToMe": "Unlikely unless you work for or with Southeast Asian government, military or legislative organisations.",
-   "howItCouldHitYou": "There is no direct path; the targeting is narrow and regional, and the entry technique is not given.",
+   "attackSurface": "Government / military networks (Southeast Asia)",
+   "tldrRootCause": "Not disclosed in the excerpt; SOCRadar attributes the intrusions to a Vietnam-sponsored group but the entry method is not given.",
+   "realisticRootCause": "Not disclosed. The excerpt describes targeting of military, government and legislative organisations for South China Sea intelligence, but not how initial access was gained.",
+   "couldThisHappenToMe": "Unlikely unless you work with Southeast Asian government or defence organisations; no technique is described to check against.",
+   "howItCouldHitYou": "There is no direct path; the targeting is regional and sector-specific, and no tooling or entry method is given.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1587,6 +1760,8 @@
      "publishedAt": "2026-11-27T14:15:00.000Z"
     }
    ],
+   "packages": [],
+   "kevProducts": [],
    "title": "Japan's education ministry discloses breach of government procurement system",
    "severity": "LOW",
    "verdict": "NOT_APPLICABLE",
@@ -1594,57 +1769,13 @@
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
    "attackSurface": "Government procurement system",
-   "tldrRootCause": "Not disclosed; the ministry said hackers breached its procurement system but the evidence gives no method.",
-   "realisticRootCause": "Not disclosed. The ministry says records containing business information and email addresses may have been exposed.",
-   "couldThisHappenToMe": "No, unless your organization is a supplier registered in that Japanese procurement system.",
-   "howItCouldHitYou": "There is no path to your footprint; registered suppliers might see follow-on phishing to exposed email addresses.",
+   "tldrRootCause": "Not disclosed; the ministry says hackers breached its procurement system, potentially exposing business information and email addresses.",
+   "realisticRootCause": "Not disclosed. Only the potential exposure of records containing business information and email addresses is stated.",
+   "couldThisHappenToMe": "No, unless your organisation is a supplier registered in that Japanese ministry's procurement system.",
+   "howItCouldHitYou": "No path to your environment; at most, suppliers whose email addresses were exposed could see follow-on phishing.",
    "lockItDown": [],
    "roleAngle": "",
-   "validationNotes": [],
-   "inventory": {
-    "checked": false,
-    "matches": []
-   },
-   "isNew": false
-  },
-  {
-   "id": "inc-29e3927e87",
-   "cves": [],
-   "isKev": false,
-   "kevRansomware": false,
-   "corroborationCount": 1,
-   "tier1Count": 0,
-   "signalScore": 12,
-   "earliestAt": "2026-11-27T13:01:43.000Z",
-   "latestAt": "2026-11-27T13:01:43.000Z",
-   "firstSeenAt": "2026-11-27T16:50:26.225Z",
-   "isRoundup": false,
-   "sources": [
-    {
-     "id": "databreaches",
-     "name": "DataBreaches.net",
-     "tier": 2,
-     "category": "breach-news",
-     "weight": 8,
-     "owner": "databreaches",
-     "title": "Korea Scientists and Engineers Mutual-aid Association Hit by Hack, 210,000 Records Leaked",
-     "url": "https://databreaches.net/2026/11/27/korea-scientists-and-engineers-mutual-aid-association-hit-by-hack-210000-records-leaked/",
-     "publishedAt": "2026-11-27T13:01:43.000Z"
-    }
-   ],
-   "title": "Korea Scientists and Engineers Mutual-aid Association breach leaks about 210,000 member records",
-   "severity": "LOW",
-   "verdict": "NOT_APPLICABLE",
-   "rootCauseBucket": "Unknown / Not Disclosed",
-   "rootCauseBasis": "UNKNOWN",
-   "evidenceQuote": "",
-   "attackSurface": "Membership organisation systems",
-   "tldrRootCause": "Not disclosed: the association detected a breach early this month and an outside investigation confirmed the leak, but no entry method is given.",
-   "realisticRootCause": "Not disclosed. An outside specialist agency confirmed on the 25th that about 210,000 pieces of member information were leaked, including membership numbers and internal identification codes.",
-   "couldThisHappenToMe": "No, unless you are a member of this association; no technology or technique is named that maps to your footprint.",
-   "howItCouldHitYou": "There is no path to your environment; this is a regional data breach with no disclosed technical cause.",
-   "lockItDown": [],
-   "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1677,7 +1808,9 @@
      "publishedAt": "2026-11-27T14:14:55.000Z"
     }
    ],
-   "title": "Roundup: the biggest data breach class action settlements of 2026",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Roundup of the biggest data breach class action settlements of 2026",
    "severity": "LOW",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Not an Incident (Research / Policy / Legal)",
@@ -1685,11 +1818,12 @@
    "evidenceQuote": "",
    "attackSurface": "Legal / regulatory",
    "tldrRootCause": "Not an incident: a legal roundup of class action settlements for breaches from past years.",
-   "realisticRootCause": "The piece summarises settlement agreements announced in 2026 for earlier breaches. It describes no new compromise or vulnerability.",
-   "couldThisHappenToMe": "No; this is a legal summary, not a threat.",
-   "howItCouldHitYou": "There is no technical path; it is only relevant as background on breach litigation costs.",
+   "realisticRootCause": "The piece summarises settlement agreements announced in 2026 for earlier breaches, some also subject to regulatory action. It describes no new compromise or vulnerability.",
+   "couldThisHappenToMe": "No; this is a legal summary, not a new threat.",
+   "howItCouldHitYou": "There is no technical path; it is useful only as context on the cost of breaches.",
    "lockItDown": [],
-   "roleAngle": "Settlement figures can support business cases for security spend.",
+   "roleAngle": "Settlement figures can support budget and risk conversations about breach cost.",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1722,19 +1856,22 @@
      "publishedAt": "2026-11-26T01:56:51.000Z"
     }
    ],
-   "title": "Podcast: congressional report on US reliance on Chinese open-weight AI models",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Podcast: US reliance on Chinese open-weight AI models and Starlink limits in Ukraine",
    "severity": "LOW",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Not an Incident (Research / Policy / Legal)",
-   "rootCauseBasis": "UNKNOWN",
-   "evidenceQuote": "",
+   "rootCauseBasis": "DISCLOSED",
+   "evidenceQuote": "The US needs to turbocharge its own domestic alternatives",
    "attackSurface": "None (policy commentary)",
-   "tldrRootCause": "Not an incident; a policy discussion of US dependence on Chinese open-weight AI models and SpaceX services in Ukraine.",
-   "realisticRootCause": "The episode covers a congressional report and a controversy over speed limits placed on SpaceX services in Ukraine. No compromise or vulnerability is described.",
-   "couldThisHappenToMe": "No; this is policy discussion with no specific compromise or vulnerability.",
-   "howItCouldHitYou": "There is no direct path; the only loose relevance is as background on the provenance of open-weight models used in local AI dev tools.",
+   "tldrRootCause": "Not an incident; a policy discussion of a congressional report on dependence on Chinese open-weight AI models.",
+   "realisticRootCause": "No compromise or vulnerability is described. The episode also covers a dispute over speed limits placed on SpaceX services in Ukraine.",
+   "couldThisHappenToMe": "No; this is policy commentary with nothing to check.",
+   "howItCouldHitYou": "There is no path; the item names no attack. Teams running open-weight models locally may find the provenance debate relevant as background only.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1767,19 +1904,22 @@
      "publishedAt": "2026-11-26T04:17:01.000Z"
     }
    ],
-   "title": "Will Dormann comment on LLMs and concise vulnerability writeups (opinion)",
+   "packages": [],
+   "kevProducts": [],
+   "title": "Social post: comment on LLMs producing concise vulnerability writeups (opinion)",
    "severity": "LOW",
    "verdict": "NOT_APPLICABLE",
    "rootCauseBucket": "Not an Incident (Research / Policy / Legal)",
    "rootCauseBasis": "UNKNOWN",
    "evidenceQuote": "",
-   "attackSurface": "None (social commentary)",
-   "tldrRootCause": "Not an incident: a social post with an opinion about LLM-generated vulnerability writeups.",
-   "realisticRootCause": "The post is a one-line remark that LLM vendors would look good if their models produced concise vulnerability writeups. It describes no compromise or vulnerability.",
-   "couldThisHappenToMe": "No. This is commentary, not a threat.",
+   "attackSurface": "None (opinion)",
+   "tldrRootCause": "Not an incident: a researcher's remark about the quality of LLM-generated vulnerability writeups.",
+   "realisticRootCause": "The post is commentary only. It describes no compromise or vulnerability.",
+   "couldThisHappenToMe": "No. This is opinion, not an attack or vulnerability.",
    "howItCouldHitYou": "There is no path to the reader.",
    "lockItDown": [],
    "roleAngle": "",
+   "playbooks": [],
    "validationNotes": [],
    "inventory": {
     "checked": false,
@@ -1789,11 +1929,11 @@
   }
  ],
  "ransomware": {
-  "totalVictims": 49,
+  "totalVictims": 53,
   "capped": false,
   "topGroups": [
    {
-    "group": "rhysida",
+    "group": "iah6477",
     "count": 6
    },
    {
@@ -1805,12 +1945,20 @@
     "count": 6
    },
    {
+    "group": "rhysida",
+    "count": 5
+   },
+   {
     "group": "orova",
     "count": 5
    },
    {
     "group": "n0n",
     "count": 3
+   },
+   {
+    "group": "soulgroup",
+    "count": 2
    },
    {
     "group": "qilin",
@@ -1821,53 +1969,126 @@
     "count": 2
    },
    {
-    "group": "anubis",
-    "count": 2
-   },
-   {
     "group": "everest",
-    "count": 2
-   },
-   {
-    "group": "aurora",
     "count": 2
    }
   ],
   "topSectors": [
    {
+    "sector": "Financial Services",
+    "count": 8
+   },
+   {
     "sector": "Professional Services",
-    "count": 7
+    "count": 8
+   },
+   {
+    "sector": "Technology",
+    "count": 8
    },
    {
     "sector": "Manufacturing",
     "count": 7
    },
    {
-    "sector": "Technology",
-    "count": 7
-   },
-   {
-    "sector": "Financial Services",
-    "count": 7
-   },
-   {
-    "sector": "Healthcare",
-    "count": 4
-   },
-   {
     "sector": "Retail & E-Commerce",
     "count": 4
    },
    {
-    "sector": "Education",
+    "sector": "Other",
     "count": 3
    },
    {
-    "sector": "Energy & Utilities",
+    "sector": "Healthcare",
+    "count": 3
+   },
+   {
+    "sector": "Agriculture and Food Production",
     "count": 2
    }
   ],
   "recent": [
+   {
+    "victim": "Brit Ltd / Brit Insurance (britinsurance.com)",
+    "group": "incransom",
+    "sector": "Financial Services",
+    "country": "GB",
+    "publishedAt": "2026-11-27T15:28:00.000Z",
+    "url": "https://www.ransomware.live/",
+    "description": "Brit Group Holdings Limited is a large international group operating in the commercial insurance and reinsurance sector, with its headquarters in London, United Kingdom."
+   },
+   {
+    "victim": "rogers-group",
+    "group": "iah6477",
+    "sector": "Other",
+    "country": "CA",
+    "publishedAt": "2026-11-27T15:08:47.365Z",
+    "url": "https://www.ransomware.live/",
+    "description": "[AI generated] N/A I don't have verified, reliable information about a specific company named \"rogers-group\" to confirm its industry, operations, or country with accuracy. There are multiple companies and entities that could match this name (e.g., construction materials, insurance brokers, or other "
+   },
+   {
+    "victim": "blackstone-consulting",
+    "group": "iah6477",
+    "sector": "Professional Services",
+    "country": "US",
+    "publishedAt": "2026-11-27T15:08:20.446Z",
+    "url": "https://www.ransomware.live/",
+    "description": "[AI generated] N/A I don't have verified, reliable information about a specific company named \"Blackstone Consulting\" that would allow me to distinguish it with confidence from similarly named firms (there are multiple companies using \"Blackstone\" in their name across different industries, including"
+   },
+   {
+    "victim": "supplyone",
+    "group": "iah6477",
+    "sector": "Other",
+    "country": "Unknown",
+    "publishedAt": "2026-11-27T15:07:51.962Z",
+    "url": "https://www.ransomware.live/",
+    "description": "[AI generated] SupplyOne, Inc. is a packaging distribution company based in the United States, operating as a subsidiary of Veritiv Corporation. It provides corrugated boxes, packaging materials, equipment, and supply chain solutions to businesses across various industries, including food and bevera"
+   },
+   {
+    "victim": "Ferrometalco (FMC)",
+    "group": "SoulGroup",
+    "sector": "Manufacturing",
+    "country": "CO",
+    "publishedAt": "2026-11-27T14:58:29.120Z",
+    "url": "https://www.ransomware.live/",
+    "description": "Established in 1979, Ferrometalco is an Egyptian industrial engineering and manufacturing company specializing in structural steel fabrication, pressure vessels, storage tanks, industrial equipment, and steel construction. The company provides engineering, fabrication, surface treatment, painting, a"
+   },
+   {
+    "victim": "US CNC Machine Company",
+    "group": "SoulGroup",
+    "sector": "Manufacturing",
+    "country": "US",
+    "publishedAt": "2026-11-27T14:57:49.957Z",
+    "url": "https://www.ransomware.live/",
+    "description": "HESQUANDOR presents itself as a precision manufacturing company specializing in CNC milling, CNC turning, and custom metal component production. The company claims to provide precision-machined parts and manufacturing solutions for industrial applications, including prototyping and production servic"
+   },
+   {
+    "victim": "avispl",
+    "group": "iah6477",
+    "sector": "Technology",
+    "country": "US",
+    "publishedAt": "2026-11-27T14:13:06.191Z",
+    "url": "https://www.ransomware.live/",
+    "description": "[AI generated] AVI-SPL is a U.S.-based audiovisual and unified communications integration company headquartered in Tampa, Florida. It designs, builds, and supports collaboration technology solutions, including video conferencing, digital signage, and managed AV services, for enterprises, government,"
+   },
+   {
+    "victim": "resers",
+    "group": "iah6477",
+    "sector": "Agriculture and Food Production",
+    "country": "Unknown",
+    "publishedAt": "2026-11-27T14:12:37.081Z",
+    "url": "https://www.ransomware.live/",
+    "description": "[AI generated] Reser's Fine Foods is an American food manufacturing company based in Beaverton, Oregon, United States. It produces refrigerated side dishes, salads (such as potato salad and coleslaw), and Mexican-style foods like tortillas and dips, distributing products to retail grocery stores, fo"
+   },
+   {
+    "victim": "RHRS Law Firm",
+    "group": "Barracuda",
+    "sector": "Professional Services",
+    "country": "Unknown",
+    "publishedAt": "2026-11-27T13:50:31.515Z",
+    "url": "https://www.ransomware.live/",
+    "description": "RHRS Law Firm suffered a data breach in which we leaked all client files - court cases, client personal information, and so on. The company claims to care about customer privacy and data, but after our numerous reports about the leak to the email of the chief lawyer, the company blatantly ignores th"
+   },
    {
     "victim": "VC ERP Consulting Pvt. Ltd.",
     "group": "rhysida",
@@ -2146,87 +2367,6 @@
     "publishedAt": "2026-11-26T00:00:00.000Z",
     "url": "https://www.ransomware.live/",
     "description": "[recreation] Arlberger Bergbahnen AG (ABB) — a cable-car and lift operator registered as FN 37028d at the Innsbruck Regional Court, headquartered at Kandaharweg 9, 6580 St. Anton am Arlberg, Tyrol, Austria, operating lifts, slopes and restaurants in the Ski Arlberg area since 1937 under the Cable Ca"
-   },
-   {
-    "victim": "AIM Consulting SA",
-    "group": "aurora",
-    "sector": "Professional Services",
-    "country": "Unknown",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "[consulting] AIM Consulting SA — a Swiss managed IT-services provider (MSP) based in Ticino (Canobbio/Davesco Soragno, Strada Cantonale 11), operating domain aimconsulting.ch, serving approximately 60 client organisations across Ticino and northern Italy, including banks (Banca del Gottardo, Corner "
-   },
-   {
-    "victim": "Technology Investment Joint Stock CompanyTACORP",
-    "group": "Orova",
-    "sector": "Technology",
-    "country": "VN",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "Thien An Technology Investment Joint Stock Company was established in 2008, specializing in the application of technology to modern urban and transport infrastructure. With a team of highly qualified engineers and experts in the fields of electronics, automation and information technology,"
-   },
-   {
-    "victim": "E Xing Precision Design",
-    "group": "Orova",
-    "sector": "Manufacturing",
-    "country": "SG",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "E Xing Precision Design Pte Ltd has been a trusted partner delivering cost-efficient and dynamic solutions. Our team is committed to designing, manufacturing, and distributing high-quality products that enhance customer success and competitiveness — with customization that never compromises on quali"
-   },
-   {
-    "victim": "Visual Birds Studio",
-    "group": "Orova",
-    "sector": "Technology",
-    "country": "IN",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "VBS is established with a vision and soul to break the stigma of VFX as unreal imagery. To break the mediocrity of special effects, VBS is pioneering in seamlessly merging the real world with the so called unreal. We are based in Mumbai and delivers all sorts of Post production solutions from VFX, C"
-   },
-   {
-    "victim": "Nelson Jewellery Arts",
-    "group": "Orova",
-    "sector": "Retail & E-Commerce",
-    "country": "HK",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "Nelson Jewellery Arts Co., Ltd. designs, manufactures and exports fine jewellery to customers globally. Our in-house award-winning designers partner with our master craftsmen to blend leading designs with the latest technology."
-   },
-   {
-    "victim": "HealthMetrics Sdn Bhd",
-    "group": "Orova",
-    "sector": "Healthcare",
-    "country": "ID",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "Seamless and borderless access to healthcare across Southeast Asia with HealthMetrics. Streamline claims & guarantee letter issuance, connect to 15,000+ healthcare providers regionally, and manage benefits with real-time insights and advanced automation."
-   },
-   {
-    "victim": "Nucleon EDR",
-    "group": "everest",
-    "sector": "Technology",
-    "country": "Unknown",
-    "publishedAt": "2026-11-26T00:00:00.000Z",
-    "url": "https://www.ransomware.live/",
-    "description": "Nucleon Smart Endpoint, AI and Zero-trust powered EDR (Endpoint Detection and Response) platform. Cloud native EDR (SaaS) with hardening capabilities."
-   },
-   {
-    "victim": "dygav.es",
-    "group": "Puppeteer",
-    "sector": "Technology",
-    "country": "ES",
-    "publishedAt": "2026-11-25T23:11:43.046Z",
-    "url": "https://www.ransomware.live/",
-    "description": "DYGAV.es is a Spanish company offering tourist accommodation and property-management services, including holiday rentals, villa management, and help with tourist licences."
-   },
-   {
-    "victim": "Tessilopera",
-    "group": "medusalocker",
-    "sector": "Not Found",
-    "country": "IT",
-    "publishedAt": "2026-11-25T23:03:21.165Z",
-    "url": "https://www.ransomware.live/",
-    "description": "Organization with 3 emails extracted. Domain: tessilopera.it"
    }
   ]
  },
@@ -2238,18 +2378,18 @@
    "category": "exploitation",
    "type": "cisa-kev",
    "status": "ok",
-   "fetchedCount": 1805,
-   "inWindowCount": 0,
-   "keptCount": 0,
+   "fetchedCount": 1808,
+   "inWindowCount": 3,
+   "keptCount": 3,
    "undatedCount": 0,
    "oldestFetchedAt": "2021-11-03T00:00:00.000Z",
-   "newestFetchedAt": "2026-11-25T00:00:00.000Z",
-   "durationMs": 283,
+   "newestFetchedAt": "2026-11-27T00:00:00.000Z",
+   "durationMs": 316,
    "error": null,
-   "inStoreWindowCount": 0,
+   "inStoreWindowCount": 3,
    "coverage": "full",
    "coveredSince": "2021-11-03T00:00:00.000Z",
-   "coverageNote": "no posts in this window"
+   "coverageNote": ""
   },
   {
    "id": "wiz-ctl",
@@ -2264,7 +2404,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2010-01-12T00:00:00.000Z",
    "newestFetchedAt": "2026-10-21T00:00:00.000Z",
-   "durationMs": 257,
+   "durationMs": 240,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2284,7 +2424,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2020-12-09T22:11:04.000Z",
    "newestFetchedAt": "2026-11-26T02:26:16.000Z",
-   "durationMs": 292,
+   "durationMs": 277,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2304,7 +2444,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-07-16T14:00:00.000Z",
    "newestFetchedAt": "2026-11-19T14:00:00.000Z",
-   "durationMs": 2202,
+   "durationMs": 1972,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2324,7 +2464,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-04-02T10:00:42.000Z",
    "newestFetchedAt": "2026-11-05T21:19:58.000Z",
-   "durationMs": 413,
+   "durationMs": 472,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2344,7 +2484,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "1970-01-01T00:00:00.000Z",
    "newestFetchedAt": "2026-11-25T08:00:00.000Z",
-   "durationMs": 269,
+   "durationMs": 305,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2364,7 +2504,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-02-12T08:00:00.000Z",
    "newestFetchedAt": "2026-11-23T08:00:00.000Z",
-   "durationMs": 1327,
+   "durationMs": 934,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2398,17 +2538,17 @@
    "type": "rss",
    "status": "ok",
    "fetchedCount": 10,
-   "inWindowCount": 1,
-   "keptCount": 1,
+   "inWindowCount": 0,
+   "keptCount": 0,
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-11T16:55:00.000Z",
    "newestFetchedAt": "2026-11-25T18:09:06.000Z",
-   "durationMs": 400,
+   "durationMs": 391,
    "error": null,
-   "inStoreWindowCount": 1,
+   "inStoreWindowCount": 0,
    "coverage": "full",
    "coveredSince": "2026-11-11T16:55:00.000Z",
-   "coverageNote": ""
+   "coverageNote": "no posts in this window"
   },
   {
    "id": "talos",
@@ -2418,17 +2558,17 @@
    "type": "rss",
    "status": "ok",
    "fetchedCount": 15,
-   "inWindowCount": 1,
+   "inWindowCount": 0,
    "keptCount": 0,
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-29T10:00:00.000Z",
    "newestFetchedAt": "2026-11-25T19:00:00.000Z",
-   "durationMs": 345,
+   "durationMs": 330,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
    "coveredSince": "2026-10-29T10:00:00.000Z",
-   "coverageNote": ""
+   "coverageNote": "no posts in this window"
   },
   {
    "id": "unit42",
@@ -2443,7 +2583,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-22T17:00:25.000Z",
    "newestFetchedAt": "2026-11-25T15:00:09.000Z",
-   "durationMs": 362,
+   "durationMs": 351,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2463,7 +2603,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-07-21T13:00:21.000Z",
    "newestFetchedAt": "2026-11-18T14:00:00.000Z",
-   "durationMs": 444,
+   "durationMs": 460,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2483,7 +2623,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2025-11-20T23:55:24.000Z",
    "newestFetchedAt": "2026-10-30T10:08:04.000Z",
-   "durationMs": 580,
+   "durationMs": 505,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2503,7 +2643,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2025-01-28T00:00:00.000Z",
    "newestFetchedAt": "2026-11-23T00:00:00.000Z",
-   "durationMs": 719,
+   "durationMs": 660,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2523,7 +2663,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-19T13:00:00.000Z",
    "newestFetchedAt": "2026-11-20T20:24:38.000Z",
-   "durationMs": 500,
+   "durationMs": 454,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2543,7 +2683,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-07-02T11:00:00.000Z",
    "newestFetchedAt": "2026-11-06T12:00:00.000Z",
-   "durationMs": 531,
+   "durationMs": 494,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2558,17 +2698,17 @@
    "type": "rss",
    "status": "ok",
    "fetchedCount": 10,
-   "inWindowCount": 1,
+   "inWindowCount": 0,
    "keptCount": 0,
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-27T16:49:55.000Z",
    "newestFetchedAt": "2026-11-25T18:54:06.000Z",
-   "durationMs": 645,
+   "durationMs": 593,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
    "coveredSince": "2026-10-27T16:49:55.000Z",
-   "coverageNote": ""
+   "coverageNote": "no posts in this window"
   },
   {
    "id": "krebs",
@@ -2583,7 +2723,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-13T23:24:53.000Z",
    "newestFetchedAt": "2026-11-21T00:36:39.000Z",
-   "durationMs": 590,
+   "durationMs": 528,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2603,7 +2743,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-07-20T20:00:25.000Z",
    "newestFetchedAt": "2026-11-26T23:45:35.000Z",
-   "durationMs": 805,
+   "durationMs": 767,
    "error": null,
    "inStoreWindowCount": 2,
    "coverage": "full",
@@ -2623,12 +2763,12 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-26T00:00:00.000Z",
    "newestFetchedAt": "2026-11-27T14:15:00.000Z",
-   "durationMs": 1227,
+   "durationMs": 835,
    "error": null,
    "inStoreWindowCount": 2,
    "coverage": "partial",
    "coveredSince": "2026-11-26T00:00:00.000Z",
-   "coverageNote": "feed only reaches back 42h; older items in this window are missing until collection has run that long"
+   "coverageNote": "feed only reaches back 46h; older items in this window are missing until collection has run that long"
   },
   {
    "id": "bleepingcomputer",
@@ -2639,16 +2779,16 @@
    "status": "ok",
    "fetchedCount": 15,
    "inWindowCount": 15,
-   "keptCount": 8,
+   "keptCount": 7,
    "undatedCount": 0,
-   "oldestFetchedAt": "2026-11-25T22:05:09.000Z",
-   "newestFetchedAt": "2026-11-27T17:06:13.000Z",
-   "durationMs": 628,
+   "oldestFetchedAt": "2026-11-26T15:23:28.000Z",
+   "newestFetchedAt": "2026-11-27T19:26:04.000Z",
+   "durationMs": 603,
    "error": null,
    "inStoreWindowCount": 9,
    "coverage": "partial",
-   "coveredSince": "2026-11-25T22:05:09.000Z",
-   "coverageNote": "feed only reaches back 44h; older items in this window are missing until collection has run that long"
+   "coveredSince": "2026-11-26T15:23:28.000Z",
+   "coverageNote": "feed only reaches back 31h; older items in this window are missing until collection has run that long"
   },
   {
    "id": "sans-isc",
@@ -2663,7 +2803,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-18T02:00:03.000Z",
    "newestFetchedAt": "2026-11-25T02:00:03.000Z",
-   "durationMs": 730,
+   "durationMs": 619,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2681,14 +2821,14 @@
    "inWindowCount": 10,
    "keptCount": 5,
    "undatedCount": 0,
-   "oldestFetchedAt": "2026-11-25T20:37:39.000Z",
-   "newestFetchedAt": "2026-11-27T14:14:55.000Z",
-   "durationMs": 646,
+   "oldestFetchedAt": "2026-11-26T13:18:46.000Z",
+   "newestFetchedAt": "2026-11-27T19:41:56.000Z",
+   "durationMs": 586,
    "error": null,
    "inStoreWindowCount": 5,
    "coverage": "partial",
-   "coveredSince": "2026-11-25T20:37:39.000Z",
-   "coverageNote": "feed only reaches back 45h; older items in this window are missing until collection has run that long"
+   "coveredSince": "2026-11-26T13:18:46.000Z",
+   "coverageNote": "feed only reaches back 33h; older items in this window are missing until collection has run that long"
   },
   {
    "id": "thehackernews",
@@ -2703,7 +2843,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-20T12:20:00.000Z",
    "newestFetchedAt": "2026-11-27T16:36:11.000Z",
-   "durationMs": 828,
+   "durationMs": 826,
    "error": null,
    "inStoreWindowCount": 10,
    "coverage": "full",
@@ -2723,7 +2863,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-23T11:00:00.000Z",
    "newestFetchedAt": "2026-11-25T13:03:24.000Z",
-   "durationMs": 668,
+   "durationMs": 646,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2743,7 +2883,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-25T15:27:36.000Z",
    "newestFetchedAt": "2026-11-27T11:00:00.000Z",
-   "durationMs": 690,
+   "durationMs": 637,
    "error": null,
    "inStoreWindowCount": 7,
    "coverage": "full",
@@ -2763,7 +2903,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-14T15:11:20.471Z",
    "newestFetchedAt": "2026-11-16T16:17:31.751Z",
-   "durationMs": 1170,
+   "durationMs": 1081,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2783,7 +2923,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-09T22:12:21.000Z",
    "newestFetchedAt": "2026-11-25T22:24:36.000Z",
-   "durationMs": 1271,
+   "durationMs": 1199,
    "error": null,
    "inStoreWindowCount": 2,
    "coverage": "full",
@@ -2798,16 +2938,16 @@
    "type": "ransomware-live",
    "status": "ok",
    "fetchedCount": 100,
-   "inWindowCount": 49,
-   "keptCount": 49,
+   "inWindowCount": 53,
+   "keptCount": 53,
    "undatedCount": 0,
-   "oldestFetchedAt": "2026-11-24T20:40:38.428Z",
-   "newestFetchedAt": "2026-11-27T11:32:23.340Z",
-   "durationMs": 1275,
+   "oldestFetchedAt": "2026-11-24T23:26:40.909Z",
+   "newestFetchedAt": "2026-11-27T15:28:00.000Z",
+   "durationMs": 1222,
    "error": null,
-   "inStoreWindowCount": 49,
+   "inStoreWindowCount": 53,
    "coverage": "full",
-   "coveredSince": "2026-11-24T20:40:38.428Z",
+   "coveredSince": "2026-11-24T23:26:40.909Z",
    "coverageNote": ""
   },
   {
@@ -2823,12 +2963,12 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-25T22:33:04.000Z",
    "newestFetchedAt": "2026-11-27T14:51:13.000Z",
-   "durationMs": 1488,
+   "durationMs": 1167,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "partial",
    "coveredSince": "2026-11-25T22:33:04.000Z",
-   "coverageNote": "feed only reaches back 43h; older items in this window are missing until collection has run that long"
+   "coverageNote": "feed only reaches back 47h; older items in this window are missing until collection has run that long"
   },
   {
    "id": "masto-krebs",
@@ -2843,7 +2983,7 @@
    "undatedCount": 0,
    "oldestFetchedAt": "2026-10-23T22:48:45.000Z",
    "newestFetchedAt": "2026-11-24T14:45:49.000Z",
-   "durationMs": 1349,
+   "durationMs": 908,
    "error": null,
    "inStoreWindowCount": 0,
    "coverage": "full",
@@ -2858,14 +2998,14 @@
    "type": "social-rss",
    "status": "ok",
    "fetchedCount": 20,
-   "inWindowCount": 7,
-   "keptCount": 2,
+   "inWindowCount": 4,
+   "keptCount": 1,
    "undatedCount": 0,
    "oldestFetchedAt": "2026-11-14T15:19:15.000Z",
    "newestFetchedAt": "2026-11-27T04:16:11.000Z",
-   "durationMs": 1384,
+   "durationMs": 897,
    "error": null,
-   "inStoreWindowCount": 2,
+   "inStoreWindowCount": 1,
    "coverage": "full",
    "coveredSince": "2026-11-14T15:19:15.000Z",
    "coverageNote": ""
@@ -2895,18 +3035,19 @@
    "tier": 2,
    "category": "social",
    "type": "rss",
-   "status": "error",
-   "fetchedCount": 0,
-   "inWindowCount": 0,
-   "keptCount": 0,
+   "status": "ok",
+   "fetchedCount": 50,
+   "inWindowCount": 5,
+   "keptCount": 1,
    "undatedCount": 0,
-   "oldestFetchedAt": null,
-   "newestFetchedAt": null,
-   "durationMs": 1552,
-   "error": "HTTP 502",
-   "inStoreWindowCount": 0,
-   "coverage": "error",
-   "coverageNote": "HTTP 502"
+   "oldestFetchedAt": "2026-10-31T16:09:55.000Z",
+   "newestFetchedAt": "2026-11-27T11:52:53.000Z",
+   "durationMs": 9085,
+   "error": null,
+   "inStoreWindowCount": 1,
+   "coverage": "full",
+   "coveredSince": "2026-10-31T16:09:55.000Z",
+   "coverageNote": ""
   },
   {
    "id": "x-twitter-api",
