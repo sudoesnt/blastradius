@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import { ROOT_DIR, loadProfileConfig, loadPresetsConfig, loadSourcesConfig } from './ingest.mjs';
 import { runPipeline } from './cli.mjs';
 import { loadPlaybooks } from './playbooks.mjs';
-import { AGENTS, listAgents, listHandoffs, createHandoff } from './handoff.mjs';
+import { AGENTS, listAgents, listHandoffs, createHandoff, checkupIncident } from './handoff.mjs';
 import {
   DATA_DIR, loadLatestDigest, listSavedDigests, loadChecklistState, saveChecklistState,
   renderMarkdownDigest, writeJsonAtomic
@@ -187,6 +187,10 @@ export function startServer(port = Number(process.env.PORT || 3377)) {
         return sendJson(res, 200, { agents: await listAgents() });
       }
 
+      if (p === '/api/playbooks' && req.method === 'GET') {
+        return sendJson(res, 200, { playbooks: (await loadPlaybooks()).filter((b) => !b.needsIncident).map((b) => ({ id: b.id, title: b.title, when: b.when })) });
+      }
+
       if (p === '/api/handoffs' && req.method === 'GET') {
         return sendJson(res, 200, { handoffs: await listHandoffs() });
       }
@@ -195,11 +199,16 @@ export function startServer(port = Number(process.env.PORT || 3377)) {
         const body = await readBodyJson(req);
         // The request names an incident and an agent from fixed lists. No text from the browser reaches the prompt or a command line.
         if (!AGENTS.some((a) => a.id === body.agent)) throw new HttpError(400, 'Unknown agent');
-        const digest = await loadLatestDigest(Number(body.hours) || 168);
-        const incident = digest?.incidents?.find((i) => i.id === body.incidentId);
+        const playbooks = await loadPlaybooks();
+        // "checkup-<playbook id>" runs one reviewed playbook on demand; anything else must be an incident in the digest.
+        const checkup = /^checkup-([a-z0-9-]{3,40})$/.exec(String(body.incidentId || ''));
+        const wanted = checkup && playbooks.find((b) => b.id === checkup[1] && !b.needsIncident);
+        if (checkup && !wanted) throw new HttpError(404, 'Unknown playbook');
+        const digest = wanted ? null : await loadLatestDigest(Number(body.hours) || 168);
+        const incident = wanted ? checkupIncident(wanted) : digest?.incidents?.find((i) => i.id === body.incidentId);
         if (!incident) throw new HttpError(404, 'That incident is not in the current digest');
         if (incident.verdict === 'UNANALYZED') throw new HttpError(409, 'This incident has not been analysed, so there is nothing to hand over yet');
-        const out = await createHandoff({ incident, playbooks: await loadPlaybooks(), agentId: body.agent, launch: body.launch === true });
+        const out = await createHandoff({ incident, playbooks, agentId: body.agent, launch: body.launch === true });
         return sendJson(res, 201, {
           id: out.id, prompt: out.prompt, promptPath: out.promptPath, launched: out.launched,
           launchError: out.launchError, agentLabel: out.agentLabel, pasteHint: out.pasteHint

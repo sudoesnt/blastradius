@@ -15,6 +15,7 @@ const state = {
   handoffs: [],
   handoffNotes: {},
   shownPrompts: {},
+  playbooks: [],
   staticPrompts: {},
   handoffTimer: null
 };
@@ -49,6 +50,7 @@ const els = {
   searchInput: document.getElementById('searchInput'),
   agentSelect: document.getElementById('agentSelect'),
   agentPick: document.getElementById('agentPick'),
+  checkupList: document.getElementById('checkupList'),
   engineSelect: document.getElementById('engineSelect'),
   refreshBtn: document.getElementById('refreshBtn'),
   exportBtn: document.getElementById('exportBtn'),
@@ -132,7 +134,7 @@ function actionKey(incidentId, text) {
 // The build step marks the page with data-static; everything the server would answer comes from snapshot/ files,
 // and checklist ticks are kept in this browser only.
 const STATIC = Boolean(document.documentElement?.dataset?.static);
-const STATIC_FILES = { '/api/presets': 'snapshot/presets.json', '/api/profile': 'snapshot/profile.json' };
+const STATIC_FILES = { '/api/presets': 'snapshot/presets.json', '/api/profile': 'snapshot/profile.json', '/api/playbooks': 'snapshot/playbooks.json' };
 const LOCAL_STATE_KEY = 'blastradius-demo-state';
 
 function readLocalState() {
@@ -263,13 +265,14 @@ function renderAll() {
     `<span class="meta-chip">${Number(st.rawItemsKept)} items → ${Number(st.clustersTotal)} incidents</span>`,
     `<span class="meta-chip" title="How the root cause is known">cause: ${Number(st.disclosed)} stated · ${Number(st.inferred)} inferred · ${Number(st.unknownCause)} not disclosed</span>`,
     st.newSinceLast ? `<span class="meta-chip chip-new">${Number(st.newSinceLast)} new since last run</span>` : '',
-    d.inventory ? `<span class="meta-chip" title="Package manifests scanned on this machine">inventory: ${Number(d.inventory.packages)} packages</span>` : ''
+    d.inventory ? `<span class="meta-chip" title="Package manifests scanned on this machine">inventory: ${Number(d.inventory.packages)} packages${d.inventory.complete === false ? ' (scan incomplete)' : ''}</span>` : ''
   ].join('');
 
   // Anything that limits how far this digest can be trusted is said up front, not buried in a drawer.
   const notices = [];
   if (st.unanalyzed) notices.push(`${Number(st.unanalyzed)} of ${Number(st.clustersTotal)} incidents were not analysed${d.fallbackReason ? ` (${d.fallbackReason})` : ''}. They are listed with sources only.`);
   else if (d.fallbackReason) notices.push(d.fallbackReason);
+  if (d.inventory && d.inventory.complete === false) notices.push(`Your inventory scan was incomplete (${(d.inventory.problems || []).join('; ') || 'reason not recorded'}). Matches are still shown, but a package that was not found is not treated as absent.`);
   const gaps = (d.sourceHealth || []).filter((s) => ['partial', 'stale', 'empty', 'error'].includes(s.coverage));
   if (gaps.length) notices.push(`${gaps.length} source${gaps.length === 1 ? '' : 's'} did not cover the whole window (${gaps.slice(0, 4).map((s) => s.name).join(', ')}${gaps.length > 4 ? ', …' : ''}). Open Sources for details.`);
   els.digestNotice.classList.toggle('hidden', !notices.length);
@@ -340,6 +343,7 @@ function getFilteredIncidents() {
 }
 
 function renderIncidents() {
+  renderCheckups();
   const list = getFilteredIncidents();
   if (!list.length) {
     els.incidentList.innerHTML = `<div class="empty-state">No incidents match the current filter.</div>`;
@@ -401,7 +405,9 @@ function renderIncidents() {
            <span class="tldr-k">Inventory</span>
            <span class="${inc.inventory.matches.length ? 'inv-hit' : 'inv-miss'}">${inc.inventory.matches.length
              ? `Found on this machine: ${esc(inc.inventory.matches.join(', '))}`
-             : `Not found in ${esc(inc.inventory.basis || 'your inventory')}`}</span>
+             : inc.inventory.conclusive === false
+               ? `Not found in the part of ${esc(inc.inventory.basis || 'your inventory')} that was scanned. The scan was incomplete, so this does not rule it out.`
+               : `Not found in ${esc(inc.inventory.basis || 'your inventory')}`}</span>
          </div>`
       : '';
 
@@ -891,6 +897,11 @@ function renderHandoffRow(inc) {
 }
 
 async function loadAgentsAndHandoffs() {
+  try {
+    state.playbooks = (await fetchJson('/api/playbooks')).playbooks || [];
+  } catch {
+    state.playbooks = [];
+  }
   if (STATIC) return;
   try {
     const [{ agents }, { handoffs }] = await Promise.all([fetchJson('/api/agents'), fetchJson('/api/handoffs')]);
@@ -946,6 +957,57 @@ function stopHandoffPolling() {
     clearInterval(state.handoffTimer);
     state.handoffTimer = null;
   }
+}
+
+// ---------- Checkups: run any reviewed check on demand ----------
+//
+// Playbooks normally appear on an incident they match. A checkup runs one without waiting for it to be in the news.
+// It uses the same handoff and the same receipts; the "incident" id is just checkup-<playbook id>.
+
+const checkupId = (playbookId) => `checkup-${playbookId}`;
+
+function renderCheckups() {
+  if (!els.checkupList) return;
+  if (!state.playbooks.length) {
+    els.checkupList.innerHTML = '';
+    return;
+  }
+  const agent = currentAgent();
+  els.checkupList.innerHTML = state.playbooks.map((p) => {
+    const id = checkupId(p.id);
+    const done = state.handoffs.find((h) => h.incidentId === id && h.receipt);
+    const running = state.handoffs.find((h) => h.incidentId === id && !h.receipt && Date.now() - Date.parse(h.createdAt) < 45 * 60000
+      && (!done || Date.parse(h.createdAt) > Date.parse(done.createdAt)));
+    const note = state.handoffNotes[id];
+    const shown = state.shownPrompts[id];
+    const label = STATIC ? 'Copy prompt' : agent ? `Run with ${agent.label}` : 'Run';
+    const last = done ? `Last run ${fmtRelative(done.receiptAt)}` : 'Not run yet';
+    return `<div class="checkup">
+        <div class="checkup-top">
+          <div>
+            <div class="checkup-title">${esc(p.title)}</div>
+            <div class="checkup-last">${esc(last)}</div>
+          </div>
+          <button class="handoff-btn" data-handoff="${esc(id)}" data-launch="1">${esc(label)}</button>
+        </div>
+        ${STATIC ? `<button class="handoff-copy" data-handoff-show="${esc(id)}">${shown ? 'Hide prompt' : 'Read it first'}</button>` : ''}
+        ${note ? `<span class="handoff-status">${esc(note)}</span>` : ''}
+        ${shown ? `<pre class="handoff-prompt">${esc(shown)}</pre>` : ''}
+        ${running ? receiptLine(running) : ''}
+        ${done ? renderNeedBlock({ id }) + receiptLine(done) : ''}
+      </div>`;
+  }).join('');
+
+  els.checkupList.querySelectorAll('[data-handoff]').forEach((btn) => {
+    btn.addEventListener('click', () => handOff(btn.dataset.handoff, btn.dataset.launch === '1'));
+  });
+  els.checkupList.querySelectorAll('[data-handoff-show]').forEach((btn) => {
+    btn.addEventListener('click', () => staticHandOff(btn.dataset.handoffShow, true));
+  });
+  els.checkupList.querySelectorAll('input[data-action-key]').forEach((cb) => {
+    cb.addEventListener('change', (e) => toggleAction(cb.dataset.actionKey, e.target.checked));
+  });
+  wireCopyButtons(els.checkupList);
 }
 
 // Demo only: prompts were built with the snapshot, so copying one needs no server and sends nothing.

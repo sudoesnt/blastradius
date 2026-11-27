@@ -23,9 +23,10 @@ It is deliberately not an organisation's security platform. It does not scan a c
 Every incident you might act on has a **Give this to ...** button. It gives the job to an AI agent you already use (Claude Code, Codex or Antigravity) on this machine.
 
 - **BlastRadius never sees a login.** The agent runs as you, with the tools you are already signed in to. No tokens are entered, stored or sent by BlastRadius.
-- **What the agent runs comes from a reviewed playbook**, not from the news. The analysis model can only pick a playbook id from the closed list in `config/playbooks.json` (GitHub tokens, browser extensions, exposed local services, secrets on disk, package exposure, account sign-in review). The incident itself is passed along as clearly marked background, with an instruction to ignore anything in it that reads like a command.
+- **What the agent runs comes from a reviewed playbook**, not from the news. The analysis model can only pick a playbook id from the closed list in `config/playbooks.json` (GitHub tokens, browser extensions, exposed local services, secrets on disk, package exposure, AI agent and MCP configuration, cloud command-line credentials and forgotten sandboxes, editor extensions, account sign-in review). The incident itself is passed along as clearly marked background, with an instruction to ignore anything in it that reads like a command.
 - **Investigate first, ask before changing.** Playbook steps are read-only, and a repository check rejects a playbook whose investigate steps contain a command that changes state. Fixes are proposed as a list and each one needs your yes. The agent is started in its normal ask-first mode, in a visible terminal.
 - **Receipts.** When it finishes, the agent writes a small JSON file saying what it checked, what it found and what it changed. The dashboard shows it on the incident and ticks the boxes if the check came back clean or fixed. Receipts are treated as untrusted: only known fields are kept, as plain text.
+- **Checkups.** The same playbooks can be run on demand from the Checkups panel, without waiting for a matching story. Useful for the ones the news rarely prompts: agent and MCP configuration, cloud command-line credentials, editor extensions.
 - **Any agent works.** If your agent has no command-line launcher, the button copies the same prompt for you to paste.
 
 What "local" means here: BlastRadius sends nothing anywhere for a handoff. Your agent talks to its own model provider as it always does, so what it reads while checking (file paths, repository names) goes there under that agent's own terms. The prompt tells it never to print or store secret values. Use an agent backed by a local model if you want nothing to leave the machine at all.
@@ -74,13 +75,19 @@ Until then the dashboard says which sources are partial and how far back each on
 
 ## Inventory
 
-Tell BlastRadius where your code lives and it records the package names in your npm, pip and Go manifests:
+Tell BlastRadius where your code lives and it records the package names it finds there:
 
 ```bash
 node src/cli.mjs inventory ~/code ~/work
 ```
 
-Advisories that name a package are then looked up rather than guessed: a match is shown on the card, and a package you do not have cannot be marked *Act Now*. For CISA KEV entries, add the products you run to `products` in your profile (for example `["Drupal", "Ivanti Connect Secure"]`). The inventory stays in the gitignored `data/` folder; the model only ever sees the match result for a specific advisory.
+It reads `package.json`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `requirements*.txt`, `pyproject.toml`, `uv.lock`, `poetry.lock`, `go.mod`, `Cargo.toml` and `Cargo.lock`.
+
+Advisories that name a package are then looked up rather than guessed. A match is shown on the card. A package you do not have cannot be marked *Act Now*, with one condition: **only a complete scan can say you do not have something.**
+
+The scan reports how it went. It is marked incomplete if it stopped at a safety limit, skipped folders nested too deep, could not read a folder, or could not parse a manifest, and it lists which. An incomplete scan still proves a match, but a miss is shown as "not found in the part that was scanned" and never lowers a verdict. The same holds for an advisory in an ecosystem the scanner does not read (Maven, NuGet and others): nothing is claimed either way. Run `node src/cli.mjs inventory` with no folders to see the last scan's status.
+
+For CISA KEV entries, add the products you run to `products` in your profile (for example `["Drupal", "Ivanti Connect Secure"]`). The inventory stays in the gitignored `data/` folder; the model only ever sees the match result for a specific advisory.
 
 ## Role tailoring
 
