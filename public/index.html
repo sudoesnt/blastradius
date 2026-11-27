@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BlastRadius — Actionable Security TL;DR</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="topbar">
@@ -40,6 +40,13 @@
     <div class="job-banner-inner">
       <span class="spinner"></span>
       <span id="jobLogText">Refreshing threat feeds...</span>
+    </div>
+  </div>
+
+  <div id="demoBanner" class="demo-banner hidden" role="note">
+    <div class="demo-banner-inner">
+      <strong>Read-only demo.</strong> This is a snapshot from <span id="demoSnapshotDate"></span>, analysed for a generic cloud-security role. Refresh and role tailoring are switched off here.
+      <a href="https://github.com/sudoesnt/blastradius#quick-start" rel="noopener">Run it locally</a> to build a digest for your own role and stack.
     </div>
   </div>
 
@@ -187,6 +194,6 @@
     </div>
   </aside>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
