@@ -112,17 +112,19 @@ const LAYERS = {
   'src/store.mjs': [],
   'src/llm.mjs': [],
   'src/inventory.mjs': [],
+  'src/playbooks.mjs': ['store'],
+  'src/handoff.mjs': ['store'],
   'src/ingest.mjs': ['xml', 'store'],
   'src/cluster.mjs': ['store'],
   'src/analyze.mjs': ['store', 'llm', 'inventory'],
   'src/eval.mjs': ['store', 'analyze', 'llm', 'ingest'],
-  'src/server.mjs': ['ingest', 'cli', 'store'],
-  'src/cli.mjs': ['ingest', 'cluster', 'analyze', 'llm', 'inventory', 'store', 'eval', 'server']
+  'src/server.mjs': ['ingest', 'cli', 'store', 'playbooks', 'handoff'],
+  'src/cli.mjs': ['ingest', 'cluster', 'analyze', 'llm', 'inventory', 'playbooks', 'store', 'eval', 'server']
 };
 // Capabilities that are confined to one place each.
 const CONFINED = [
-  { what: 'starting a process', re: /node:child_process/, only: ['src/llm.mjs'],
-    fix: 'Model calls go through callModel() in src/llm.mjs. That is the only place the claude CLI is started, with no tools, no MCP servers and no user settings. Starting a process anywhere else bypasses that lockdown.' },
+  { what: 'starting a process', re: /node:child_process/, only: ['src/llm.mjs', 'src/handoff.mjs'],
+    fix: 'Only two places start a process. Model calls go through callModel() in src/llm.mjs, which runs the claude CLI with no tools, no MCP servers and no user settings. Opening the person\'s own agent goes through createHandoff() in src/handoff.mjs, whose command line contains only the agent\'s path and a prompt file path. Starting a process anywhere else bypasses both.' },
   { what: 'a network request', re: /\bfetch\s*\(/, only: ['src/ingest.mjs', 'src/llm.mjs'],
     fix: 'Feeds are fetched in src/ingest.mjs (so they are filtered, stored and counted in coverage) and models are called in src/llm.mjs. Add a source to config/sources.json or an engine to llm.mjs instead of fetching here.' },
   { what: 'a file write', re: /\bfs\.(writeFile|appendFile|rename|rm|unlink|mkdir)\b/, only: ['src/store.mjs', 'src/cli.mjs', 'src/eval.mjs'],
@@ -172,6 +174,24 @@ for (const f of tracked.filter((x) => /^(src|public|scripts)\/.*\.(mjs|js)$/.tes
 
   if (f !== 'scripts/check.mjs' && MARKERS.test(text)) {
     fail(`${f}: contains a workaround marker (${text.match(MARKERS)[0]}). Fix the cause now or open an issue; markers in the code get copied as house style.`);
+  }
+}
+
+// 5b. Playbooks: the closed list of checks an agent can be handed
+const { playbookProblems } = await import(new URL('../src/playbooks.mjs', import.meta.url));
+const playbookConfig = await readJson('config/playbooks.json');
+if (playbookConfig) {
+  for (const p of playbookProblems(playbookConfig)) fail(`config/playbooks.json: ${p}`);
+  // "investigate" is the part an agent may run without asking, so it must not contain a command that changes state.
+  // Only text inside backticks is checked: that is what the agent is told to run.
+  const CHANGES = /\b(rm|del|rmdir|remove-item|revoke|logout|uninstall|install|kill|stop-process|chmod|chown|git (push|commit|reset|clean)|docker (rm|stop|kill)|delete|set-itemproperty|reg (add|delete))\b/i;
+  for (const p of playbookConfig.playbooks || []) {
+    for (const step of p.investigate || []) {
+      for (const [, command] of step.matchAll(/`([^`]+)`/g)) {
+        const hit = command.match(CHANGES);
+        if (hit) fail(`config/playbooks.json [${p.id}]: an investigate step runs \`${command}\`, which contains "${hit[0]}". Investigate steps are read-only; put anything that changes state under "fixes", where the agent has to ask first.`);
+      }
+    }
   }
 }
 

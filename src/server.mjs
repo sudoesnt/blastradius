@@ -4,6 +4,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT_DIR, loadProfileConfig, loadPresetsConfig, loadSourcesConfig } from './ingest.mjs';
 import { runPipeline } from './cli.mjs';
+import { loadPlaybooks } from './playbooks.mjs';
+import { AGENTS, listAgents, listHandoffs, createHandoff } from './handoff.mjs';
 import {
   DATA_DIR, loadLatestDigest, listSavedDigests, loadChecklistState, saveChecklistState,
   renderMarkdownDigest, writeJsonAtomic
@@ -177,6 +179,31 @@ export function startServer(port = Number(process.env.PORT || 3377)) {
           dismissedIncidents: { ...current.dismissedIncidents, ...boolMap(body.dismissedIncidents) }
         });
         return sendJson(res, 200, saved);
+      }
+
+      // ----- Hand an incident to the person's own agent -----
+
+      if (p === '/api/agents' && req.method === 'GET') {
+        return sendJson(res, 200, { agents: await listAgents() });
+      }
+
+      if (p === '/api/handoffs' && req.method === 'GET') {
+        return sendJson(res, 200, { handoffs: await listHandoffs() });
+      }
+
+      if (p === '/api/handoff' && req.method === 'POST') {
+        const body = await readBodyJson(req);
+        // The request names an incident and an agent from fixed lists. No text from the browser reaches the prompt or a command line.
+        if (!AGENTS.some((a) => a.id === body.agent)) throw new HttpError(400, 'Unknown agent');
+        const digest = await loadLatestDigest(Number(body.hours) || 168);
+        const incident = digest?.incidents?.find((i) => i.id === body.incidentId);
+        if (!incident) throw new HttpError(404, 'That incident is not in the current digest');
+        if (incident.verdict === 'UNANALYZED') throw new HttpError(409, 'This incident has not been analysed, so there is nothing to hand over yet');
+        const out = await createHandoff({ incident, playbooks: await loadPlaybooks(), agentId: body.agent, launch: body.launch === true });
+        return sendJson(res, 201, {
+          id: out.id, prompt: out.prompt, promptPath: out.promptPath, launched: out.launched,
+          launchError: out.launchError, agentLabel: out.agentLabel, pasteHint: out.pasteHint
+        });
       }
 
       if (p === '/api/presets' && req.method === 'GET') {

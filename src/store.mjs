@@ -177,6 +177,57 @@ export async function loadInventory() {
   return readJson(INVENTORY_PATH, null);
 }
 
+// ---------- Agent handoffs and receipts ----------
+//
+// A handoff is a folder with the prompt given to the person's agent. A receipt is the small JSON file the agent
+// writes back when it is done. Both stay in the local data folder.
+
+export const HANDOFFS_DIR = path.join(DATA_DIR, 'handoffs');
+export const RECEIPTS_DIR = path.join(DATA_DIR, 'receipts');
+const HANDOFF_ID = /^h-[0-9a-f]{12}$/;
+const MAX_RECEIPT_BYTES = 64 * 1024;
+
+/** Write the files for one handoff. `files` maps a plain file name to its text; `executable` names are made runnable. */
+export async function saveHandoffFiles(id, files, executable = []) {
+  if (!HANDOFF_ID.test(id)) throw new Error('bad handoff id');
+  const dir = path.join(HANDOFFS_DIR, id);
+  await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(RECEIPTS_DIR, { recursive: true });
+  for (const [name, text] of Object.entries(files)) {
+    if (!/^[a-z0-9._-]+$/i.test(name)) throw new Error('bad handoff file name');
+    await fs.writeFile(path.join(dir, name), text, 'utf8');
+    if (executable.includes(name)) await fs.chmod(path.join(dir, name), 0o755);
+  }
+  return dir;
+}
+
+export const receiptPathFor = (id) => path.join(RECEIPTS_DIR, `${id}.json`);
+
+/** Every handoff's metadata, newest first, each with the raw receipt its agent wrote (or null). Receipts are untrusted. */
+export async function loadHandoffs() {
+  let ids = [];
+  try { ids = (await fs.readdir(HANDOFFS_DIR)).filter((n) => HANDOFF_ID.test(n)); } catch { return []; }
+  const out = [];
+  for (const id of ids) {
+    const meta = await readJson(path.join(HANDOFFS_DIR, id, 'handoff.json'), null);
+    if (!meta || meta.id !== id) continue;
+    let receipt = null;
+    let receiptAt = null;
+    try {
+      const file = receiptPathFor(id);
+      const stat = await fs.stat(file);
+      if (stat.isFile() && stat.size <= MAX_RECEIPT_BYTES) {
+        receipt = JSON.parse(await fs.readFile(file, 'utf8'));
+        receiptAt = stat.mtime.toISOString();
+      }
+    } catch {
+      // no receipt yet, or not valid JSON yet
+    }
+    out.push({ meta, receipt, receiptAt });
+  }
+  return out.sort((a, b) => String(b.meta.createdAt).localeCompare(String(a.meta.createdAt))).slice(0, 200);
+}
+
 // ---------- Markdown export ----------
 
 // Feed text is untrusted: keep it on one line and stop it forming links, embeds, HTML or headings.
