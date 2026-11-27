@@ -111,33 +111,113 @@ When you are finished, write this JSON file (create the folder if it does not ex
 
 ${receiptPath}
 
+The person reads this on a small card in a dashboard, between other things. Write it for a glance, not as an audit log:
+
+- Sort what you found. Something that needs a decision or a fix goes in "attention". Something you checked that is fine goes in "lookedFine". Do not put reassurance, expected results or "informational" notes in "attention".
+- Keep every "title", "do" and "lookedFine" entry to one short plain phrase, about 80 characters at most. No ids, hashes, version strings or file paths in them; those belong in "detail" or "where".
+- "yourTurn" is the short list of things only the person can do. Start each with a verb, one action per item, and put the page to open in "open". If several pages need the same look, make them separate items.
+- Leave a list empty rather than padding it.
+
 {
   "handoffId": "${id}",
   "incidentId": "${incident.id}",
   "agent": "${agentId}",
   "result": "clean" | "findings" | "fixed" | "needs-you",
-  "summary": "one or two plain sentences; no secret values",
-  "findings": [{ "what": "what you found", "where": "file path and line, or the account page; never a secret value" }],
-  "changes": [{ "what": "what you changed", "approvedByPerson": true }],
-  "needsYou": ["a step only the person can do"]
+  "summary": "Two short sentences at most. Start with the answer: is this person exposed or not.",
+  "yourTurn": [{ "do": "Check you recognise both SSH keys", "open": "the one web address or browser page to open, if any", "why": "one short sentence on what to look for" }],
+  "attention": [{ "title": "Unknown add-on can read every site", "detail": "one or two sentences: what it is and why it matters", "where": "file path and line, or the account page; never a secret value" }],
+  "lookedFine": ["No GitHub tokens in files or shell history", "Browser is not under management"],
+  "changes": [{ "what": "what you changed", "approvedByPerson": true }]
 }
 
 Use "clean" if nothing needed attention, "findings" if something did and is not fixed yet, "fixed" if everything you found was fixed with the person's approval, and "needs-you" if what remains can only be done by the person.
 ` : ''}`;
 }
 
+
 const RESULTS = ['clean', 'findings', 'fixed', 'needs-you'];
 
-/** A receipt is written by an agent, so it is untrusted: keep only known fields, as bounded plain text. */
+// Something the person can open or type into a browser: a web link or a browser-internal page.
+const OPENABLE = /\b(?:https?:\/\/[^\s"'<>)]+|(?:chrome|edge|brave|about):[\w\-./#?=]+)/i;
+// Older receipts mixed "this is fine" notes in with real findings. These openings mark the former.
+const FINE_OPENING = /^(informational|expected|not managed|no |none\b|nothing\b|only one\b|clean\b|ok\b|fine\b)/i;
+
+/** Split a long sentence into a short lead and the rest, so the lead can be read at a glance. */
+export function splitLead(text, max = 90) {
+  const t = oneLine(text, 1200);
+  if (t.length <= max) return [t, ''];
+  const colon = t.indexOf(': ');
+  if (colon >= 12 && colon <= max) return [t.slice(0, colon), t.slice(colon + 2)];
+  const stop = t.slice(0, max + 40).search(/[.;](\s|$)/);
+  if (stop >= 20 && stop <= max + 30) return [t.slice(0, stop), t.slice(stop + 1).trim()];
+  const cut = t.lastIndexOf(' ', max);
+  return [`${t.slice(0, cut > 40 ? cut : max)}…`, t];
+}
+
+const OPENABLE_ALL = new RegExp(OPENABLE.source, 'gi');
+const openables = (s) => [...new Set((String(s || '').match(OPENABLE_ALL) || []).map((m) => m.replace(/[.,;:]+$/, '')))].slice(0, 4);
+
+// "Open https://x and confirm you recognise the keys" -> "Confirm you recognise the keys". The pages become buttons,
+// so the step can lead with what the person actually has to do there.
+const ACTION = /\b(confirm|check|verify|look for|review|make sure|scan|decide|remove|compare)\b/i;
+function leadWithAction(text) {
+  if (!/^open\s/i.test(text)) return text;
+  const firstPage = text.match(OPENABLE);
+  if (!firstPage) return text;
+  const after = text.slice(firstPage.index + firstPage[0].length);
+  const verb = after.match(ACTION);
+  if (!verb) return text;
+  const rest = after.slice(verb.index);
+  return rest.length >= 12 ? rest.charAt(0).toUpperCase() + rest.slice(1) : text;
+}
+
+/**
+ * A receipt is written by an agent, so it is untrusted: keep only known fields, as bounded plain text.
+ * The result is always the same easy-to-read shape, whichever way the agent wrote it:
+ *   yourTurn   short steps only the person can do        (from "yourTurn", or older "needsYou" sentences)
+ *   attention  things that need a decision or a fix      (from "attention", or older "findings")
+ *   lookedFine what was checked and found OK             (from "lookedFine", or older findings that only inform)
+ */
 export function sanitizeReceipt(raw, id) {
   if (!raw || typeof raw !== 'object' || raw.handoffId !== id || !RESULTS.includes(raw.result)) return null;
-  const list = (v, map) => (Array.isArray(v) ? v : []).slice(0, 25).map(map).filter(Boolean);
+  const list = (v, map, max = 25) => (Array.isArray(v) ? v : []).slice(0, max).map(map).filter(Boolean);
+
+  const attention = [];
+  const lookedFine = list(raw.lookedFine, (s) => (typeof s === 'string' || typeof s === 'number' ? oneLine(s, 140) || null : null), 20);
+  for (const f of [...(Array.isArray(raw.attention) ? raw.attention : []), ...(Array.isArray(raw.findings) ? raw.findings : [])].slice(0, 25)) {
+    if (!f || typeof f !== 'object') continue;
+    const full = oneLine(f.title || f.what, 1200);
+    if (!full) continue;
+    const extra = oneLine(f.detail, 600);
+    // Only the older shape (a "what" paragraph) needs sorting; an agent that used "attention" has already sorted.
+    if (!f.title && FINE_OPENING.test(full)) {
+      lookedFine.push(splitLead(full.replace(/^(informational|expected)[,:]?\s*(expected[,:]?\s*)?/i, ''), 120)[0]);
+      continue;
+    }
+    const [title, rest] = splitLead(full, 100);
+    attention.push({ title, detail: oneLine([rest, extra].filter(Boolean).join(' '), 700), where: oneLine(f.where, 300) });
+  }
+
+  const yourTurn = [];
+  for (const t of [...(Array.isArray(raw.yourTurn) ? raw.yourTurn : []), ...(Array.isArray(raw.needsYou) ? raw.needsYou : [])].slice(0, 15)) {
+    const isObj = t && typeof t === 'object';
+    const full = oneLine(isObj ? t.do : t, 1200);
+    if (!full) continue;
+    const [lead, rest] = splitLead(isObj ? full : leadWithAction(full), 80);
+    yourTurn.push({
+      do: lead,
+      why: oneLine([rest, isObj ? t.why : ''].filter(Boolean).join(' '), 500),
+      opens: [...new Set([...(isObj ? openables(t.open) : []), ...openables(full)])].slice(0, 4).map((o) => oneLine(o, 300))
+    });
+  }
+
   return {
     result: raw.result,
     summary: oneLine(raw.summary, 600),
-    findings: list(raw.findings, (f) => (f && typeof f === 'object' && oneLine(f.what) ? { what: oneLine(f.what), where: oneLine(f.where, 300) } : null)),
-    changes: list(raw.changes, (c) => (c && typeof c === 'object' && oneLine(c.what) ? { what: oneLine(c.what), approvedByPerson: c.approvedByPerson === true } : null)),
-    needsYou: list(raw.needsYou, (s) => oneLine(s) || null)
+    yourTurn,
+    attention,
+    lookedFine: lookedFine.slice(0, 20),
+    changes: list(raw.changes, (c) => (c && typeof c === 'object' && oneLine(c.what) ? { what: oneLine(c.what), approvedByPerson: c.approvedByPerson === true } : null))
   };
 }
 

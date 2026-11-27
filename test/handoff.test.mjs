@@ -128,19 +128,63 @@ test('a receipt is reduced to known fields and plain text', () => {
   const id = 'h-aaaaaaaaaaaa';
   const good = sanitizeReceipt({
     handoffId: id, result: 'findings', summary: `Two tokens found.\n\n<script>x</script> ${'y'.repeat(2000)}`,
-    findings: [{ what: 'Classic token in .npmrc', where: '~/.npmrc:3', secret: 'ghp_shouldNeverSurvive' }, 'nonsense', { where: 'no what' }],
-    changes: [{ what: 'Removed line', approvedByPerson: 'yes' }], needsYou: ['Revoke it on GitHub', 7], extra: { run: 'rm -rf' }
+    attention: [{ title: 'Classic token in .npmrc', detail: 'It has the repo scope.', where: '~/.npmrc:3', secret: 'ghp_shouldNeverSurvive' }, 'nonsense', { where: 'no title' }],
+    lookedFine: ['No tokens in shell history', { not: 'a string' }, 7],
+    changes: [{ what: 'Removed line', approvedByPerson: 'yes' }],
+    yourTurn: [{ do: 'Revoke the token', open: 'https://github.com/settings/tokens', why: 'It was in a file.' }, 7], extra: { run: 'rm -rf' }
   }, id);
   assert.equal(good.result, 'findings');
   assert.ok(good.summary.length <= 600 && !good.summary.includes('\n'));
-  assert.deepEqual(good.findings, [{ what: 'Classic token in .npmrc', where: '~/.npmrc:3' }]);
+  assert.deepEqual(good.attention, [{ title: 'Classic token in .npmrc', detail: 'It has the repo scope.', where: '~/.npmrc:3' }]);
+  assert.deepEqual(good.lookedFine, ['No tokens in shell history', '7']);
   assert.equal(good.changes[0].approvedByPerson, false, 'approval must be literally true');
-  assert.deepEqual(good.needsYou, ['Revoke it on GitHub', '7']);
+  assert.deepEqual(good.yourTurn[0], { do: 'Revoke the token', why: 'It was in a file.', opens: ['https://github.com/settings/tokens'] });
+  assert.equal(good.yourTurn[1].do, '7');
   assert.equal(good.extra, undefined);
+  assert.ok(!JSON.stringify(good).includes('ghp_shouldNeverSurvive'));
 
   assert.equal(sanitizeReceipt({ handoffId: 'h-bbbbbbbbbbbb', result: 'clean' }, id), null, 'a receipt for another handoff is ignored');
   assert.equal(sanitizeReceipt({ handoffId: id, result: 'pwned' }, id), null);
   assert.equal(sanitizeReceipt('clean', id), null);
+});
+
+test('a long-winded receipt is reshaped into short, sorted items', () => {
+  const id = 'h-cccccccccccc';
+  const r = sanitizeReceipt({
+    handoffId: id, result: 'findings', summary: 'One add-on needs a decision.',
+    findings: [
+      { what: "Firefox add-on 'Claude in Sidebar' 4.3.2 (id {294b9016-c306-4f99-b4d4-d410e01e867f}), installed 2026-11-04. Uses the product name but lists no creator, and can read every site.", where: 'C:\\profile\\extensions.json' },
+      { what: 'Informational, expected: Chrome extension Claude has broad access. It is installed from the Chrome Web Store.', where: 'manifest.json' },
+      { what: 'Not managed: no policy keys for Chrome, Edge or Firefox.', where: 'HKLM' },
+      { what: 'No GitHub token patterns found anywhere under the home folder.', where: 'C:\\Users\\me' }
+    ],
+    needsYou: [
+      "Decide whether to keep 'Claude in Sidebar' in Firefox: open about:addons, check whether you remember installing it, and remove it there if not.",
+      'Open https://github.com/settings/keys and confirm you recognise both SSH keys (created 2026-09-29 and 2026-11-18).',
+      'Open chrome://extensions and chrome://policy in Chrome and edge://extensions in Edge and confirm they match: Chrome shows Claude; Edge shows nothing.',
+      'Open https://github.com/settings/applications: check Authorized OAuth Apps for anything unrecognised.'
+    ]
+  }, id);
+
+  // Only the real finding asks for a decision; reassurance is filed under "looked fine".
+  assert.equal(r.attention.length, 1);
+  assert.ok(r.attention[0].title.length <= 110 && r.attention[0].title.startsWith("Firefox add-on 'Claude in Sidebar'"));
+  assert.ok(r.attention[0].detail.includes('can read every site'), 'the rest of the paragraph is kept as detail');
+  assert.equal(r.lookedFine.length, 3);
+  assert.ok(r.lookedFine[0].startsWith('Chrome extension Claude'), 'the "Informational, expected:" preamble is dropped');
+
+  // Steps lead with the action; the pages become buttons.
+  assert.deepEqual(r.yourTurn.map((t) => t.do), [
+    "Decide whether to keep 'Claude in Sidebar' in Firefox",
+    'Confirm you recognise both SSH keys (created 2026-09-29 and 2026-11-18).',
+    'Confirm they match: Chrome shows Claude; Edge shows nothing.',
+    'Check Authorized OAuth Apps for anything unrecognised.'
+  ]);
+  assert.deepEqual(r.yourTurn[0].opens, ['about:addons']);
+  assert.deepEqual(r.yourTurn[1].opens, ['https://github.com/settings/keys']);
+  assert.deepEqual(r.yourTurn[2].opens, ['chrome://extensions', 'chrome://policy', 'edge://extensions']);
+  assert.ok(r.yourTurn[0].why.includes('remove it there if not'), 'the rest of a long step is kept as the explanation');
+  assert.ok(r.yourTurn.every((t) => t.do.length <= 90));
 });
 
 // ---------- through the server ----------
@@ -165,7 +209,7 @@ test('the server builds a handoff from the digest, not from what the browser sen
 
   // The agent writes its receipt; the dashboard reads it back sanitised and matched to the handoff.
   await fs.mkdir(RECEIPTS_DIR, { recursive: true });
-  await fs.writeFile(receiptPathFor(ok.json.id), JSON.stringify({ handoffId: ok.json.id, incidentId: incident.id, agent: 'antigravity', result: 'clean', summary: 'No stray tokens found.', findings: [], changes: [], needsYou: [] }));
+  await fs.writeFile(receiptPathFor(ok.json.id), JSON.stringify({ handoffId: ok.json.id, incidentId: incident.id, agent: 'antigravity', result: 'clean', summary: 'No stray tokens found.', lookedFine: ['No tokens in files'], changes: [], yourTurn: [] }));
   const mine = (await listHandoffs()).find((h) => h.id === ok.json.id);
   assert.equal(mine.incidentId, incident.id);
   assert.equal(mine.receipt.result, 'clean');
