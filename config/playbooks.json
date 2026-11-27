@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "about": "Playbooks are short, reviewed checks that one person's own agent can run on their own machine. The analysis model only ever picks a playbook id from this list; it never writes the steps. Every playbook is read-only in `investigate`. Anything that changes something lives in `fixes`, and the agent must get a yes from the person for each one. Keep them personal in scope: this laptop, this browser, this person's accounts. Not an organisation's fleet or cloud estate.",
+  "playbooks": [
+    {
+      "id": "github-tokens",
+      "title": "GitHub tokens and sign-ins on this machine",
+      "when": "An incident started with a stolen or leaked GitHub token, SSH key, session or developer account.",
+      "needs": ["gh (optional)", "git"],
+      "investigate": [
+        "Run `gh auth status` and report which accounts are signed in and what scopes each token has. If gh is not installed, say so and continue.",
+        "Run `git config --global --get-all credential.helper` and report where git stores credentials.",
+        "Run `gh ssh-key list` and `gh gpg-key list`. List each key with its title and date so the person can spot ones they do not recognise. A permissions error here is fine; report it and move on.",
+        "Search for GitHub tokens left in files. Patterns: `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_` followed by 36 or more letters and digits, and `github_pat_` followed by 60 or more. Look in the home folder's dotfiles (.npmrc, .netrc, .gitconfig, shell profiles and shell history), in .env files, and in the person's code and notes folders. Skip node_modules, .git internals and gh's own config folder. Report file path and line number only. Never print the token.",
+        "List environment variable NAMES (not values) that contain TOKEN, SECRET, KEY or PASSWORD."
+      ],
+      "humanSteps": [
+        "Open https://github.com/settings/tokens and https://github.com/settings/personal-access-tokens and look for tokens with no expiry, tokens you do not use, and classic tokens with the `repo` scope.",
+        "Open https://github.com/settings/applications and check Authorized OAuth Apps and Authorized GitHub Apps for anything you do not recognise.",
+        "Open https://github.com/settings/security-log and scan the last two weeks for sign-ins, new keys or new tokens you did not make."
+      ],
+      "fixes": [
+        "Remove a token found in a file, after the person confirms it has been revoked on GitHub.",
+        "Run `gh auth logout` for an account the person no longer uses.",
+        "Run `gh ssh-key delete <id>` for a key the person does not recognise."
+      ]
+    },
+    {
+      "id": "browser-extensions",
+      "title": "Browser extensions and browser management on this machine",
+      "when": "An incident involved a malicious or look-alike browser extension, an infostealer that installs extensions, or a browser put under fake management.",
+      "needs": [],
+      "investigate": [
+        "Find the installed browsers' profile folders. Chrome on Windows: `%LOCALAPPDATA%\\Google\\Chrome\\User Data`; on macOS: `~/Library/Application Support/Google/Chrome`; on Linux: `~/.config/google-chrome`. Edge on Windows: `%LOCALAPPDATA%\\Microsoft\\Edge\\User Data`. Firefox profiles: `%APPDATA%\\Mozilla\\Firefox\\Profiles` or `~/Library/Application Support/Firefox/Profiles` or `~/.mozilla/firefox`.",
+        "For each Chromium profile, read every `Extensions/<id>/<version>/manifest.json` and list: extension id, name, version, the permissions and host permissions it asks for, and whether the manifest has an `update_url` pointing at the Chrome Web Store (clients2.google.com). For Firefox, read `extensions.json` in each profile and list the add-ons that are not built in.",
+        "Flag any extension that: has no Web Store update URL (side-loaded), asks to read all sites together with cookies, webRequest or debugger, or uses the name or icon of a well-known product it does not come from.",
+        "Check whether the browser is managed. Windows: run `reg query HKLM\\SOFTWARE\\Policies\\Google\\Chrome /s` and `reg query HKCU\\SOFTWARE\\Policies\\Google\\Chrome /s` (and the same under `Microsoft\\Edge`). macOS: look for `/Library/Managed Preferences/com.google.Chrome.plist`. A missing key or file means not managed. Report any `ExtensionInstallForcelist` entries in full."
+      ],
+      "humanSteps": [
+        "Open chrome://extensions and chrome://policy in each browser profile you use and compare with the list above.",
+        "If this is a personal machine and the browser says it is managed by an organisation, treat that as a finding."
+      ],
+      "fixes": [
+        "Tell the person exactly which extension to remove from chrome://extensions (removing it through the browser is safer than deleting its folder).",
+        "Delete a policy registry value or plist that force-installs an extension the person did not ask for, after showing its full contents."
+      ]
+    },
+    {
+      "id": "local-exposed-services",
+      "title": "Local services reachable from the network",
+      "when": "An incident involved a developer tool, local AI agent, MCP server, database or container that listened on all network interfaces without authentication.",
+      "needs": ["docker (optional)"],
+      "investigate": [
+        "List listening TCP ports that are not bound to loopback. Windows (PowerShell): `Get-NetTCPConnection -State Listen | Where-Object { $_.LocalAddress -notin '127.0.0.1','::1' } | Select-Object LocalAddress,LocalPort,OwningProcess`, then name each owning process with `Get-Process -Id <pid>`. macOS or Linux: `lsof -nP -iTCP -sTCP:LISTEN` and keep the rows not bound to 127.0.0.1 or [::1].",
+        "If Docker is installed, run `docker ps --format \"{{.Names}}\\t{{.Image}}\\t{{.Ports}}\"` and list containers that publish a port on 0.0.0.0 or [::].",
+        "If the incident names a specific product or port, say plainly whether it is present on this machine.",
+        "For each exposed port, say what it is, whether it needs to be reachable from other machines, and whether it has authentication if you can tell without connecting to anything other than this machine."
+      ],
+      "humanSteps": [
+        "On shared or public Wi-Fi, assume every port in that list is reachable by strangers."
+      ],
+      "fixes": [
+        "Change a container's port mapping to `127.0.0.1:PORT:PORT` in the compose file the person points you at.",
+        "Stop a container or service the person confirms they do not need."
+      ]
+    },
+    {
+      "id": "secrets-on-disk",
+      "title": "API keys and passwords sitting in files",
+      "when": "An incident started with a hardcoded, leaked or exposed credential, API key or cloud access key.",
+      "needs": [],
+      "investigate": [
+        "Ask the person which folders hold their code and notes if it is not obvious; otherwise start from the home folder and skip system, application and cache folders, node_modules and .git internals.",
+        "Find `.env` files and list them with the NAMES of the variables they define. Never print values.",
+        "Search text files for key-shaped strings: `AKIA` followed by 16 capitals or digits (AWS), `AIza` followed by 35 characters (Google), `sk-ant-` and `sk-` followed by 32 or more characters (model providers), `xox[baprs]-` (Slack), `-----BEGIN` ... `PRIVATE KEY-----`. Report file path, line number and which kind. Never print the secret.",
+        "For each git repository that contains a hit, run `git -C <repo> remote -v` and say whether the file is tracked (`git -C <repo> ls-files --error-unmatch <file>`). A tracked secret in a repository with a remote is the urgent kind."
+      ],
+      "humanSteps": [
+        "Any secret that was ever committed and pushed should be revoked at its provider, not just deleted from the file."
+      ],
+      "fixes": [
+        "Move a secret out of a tracked file into an ignored `.env`, after the person has revoked and reissued it.",
+        "Add a missing `.env` entry to `.gitignore`."
+      ]
+    },
+    {
+      "id": "package-exposure",
+      "title": "Is the affected package in my projects?",
+      "when": "A vulnerability or compromise in a named open-source package, library or dependency.",
+      "needs": [],
+      "investigate": [
+        "The affected packages and CVE ids are listed under Facts in this handoff. Search the person's code folders for lockfiles and manifests (package-lock.json, pnpm-lock.yaml, yarn.lock, package.json, requirements*.txt, poetry.lock, uv.lock, go.sum, go.mod, Cargo.lock, composer.lock, Gemfile.lock, mix.lock).",
+        "For every project that includes an affected package, report the project path, the installed version, and whether it is a direct or a transitive dependency.",
+        "If the source link in this handoff states which versions are affected or fixed, compare and say for each project whether it is affected. If you cannot tell from the handoff, say so; do not guess a version range.",
+        "If nothing is found, say plainly that none of the scanned folders use the package, and list the folders you scanned."
+      ],
+      "humanSteps": [],
+      "fixes": [
+        "Update the dependency to the fixed version in one project and run that project's tests.",
+        "Remove a dependency the person confirms is unused."
+      ]
+    },
+    {
+      "id": "account-sign-in-review",
+      "title": "Sign-in and recovery settings on my accounts",
+      "when": "An incident relied on phishing, voice phishing, a help-desk reset, session theft or a rogue app authorisation against a personal or work account. Nothing on this machine needs scanning; the person has to look at their own account pages.",
+      "needs": [],
+      "investigate": [
+        "This playbook is done by the person in their browser. Your job is to walk them through it one step at a time, wait for what they see, and keep notes for the receipt. Do not ask for passwords, codes or screenshots of secrets.",
+        "Ask which accounts the incident could apply to (for example Google, Microsoft, Okta, GitHub, their password manager)."
+      ],
+      "humanSteps": [
+        "Google: open https://myaccount.google.com/security. Check 'Your devices', 'Recent security activity', the 2-Step Verification methods, and 'Third-party apps and services'.",
+        "Microsoft: open https://mysignins.microsoft.com/security-info and https://account.microsoft.com/security.",
+        "GitHub: open https://github.com/settings/security and https://github.com/settings/sessions.",
+        "For each: is a passkey or security key enrolled, are SMS or voice codes still allowed as a fallback, and is there any device, session or app you do not recognise?"
+      ],
+      "fixes": [
+        "Nothing for the agent to change. Record what the person decided to remove or enable."
+      ]
+    }
+  ]
+}

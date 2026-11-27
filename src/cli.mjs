@@ -7,6 +7,7 @@ import { clusterIncidents, summarizeRansomware } from './cluster.mjs';
 import { analyzeClusters, findSameEventGroups } from './analyze.mjs';
 import { resolveEngine } from './llm.mjs';
 import { scanInventory } from './inventory.mjs';
+import { loadPlaybooks } from './playbooks.mjs';
 import {
   DATA_DIR, INVENTORY_PATH, saveDigest, loadLatestDigest, renderMarkdownDigest,
   loadAnalysisCache, saveAnalysisCache, loadInventory, writeJsonAtomic
@@ -64,7 +65,8 @@ export async function runPipeline({
 
   const cache = await loadAnalysisCache();
   const inventory = await loadInventory();
-  const analyzed = await analyzeClusters(clusters, profile, { hours, engine, maxIncidents, onProgress, cache, inventory, ...(call ? { call } : {}) });
+  const playbooks = await loadPlaybooks();
+  const analyzed = await analyzeClusters(clusters, profile, { hours, engine, maxIncidents, onProgress, cache, inventory, playbooks, ...(call ? { call } : {}) });
   await saveAnalysisCache(cache);
 
   const prevIds = new Set((previous?.incidents || []).map((i) => i.id));
