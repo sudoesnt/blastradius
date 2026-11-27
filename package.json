@@ -14,10 +14,12 @@
     "collect": "node src/cli.mjs collect",
     "sources": "node src/cli.mjs sources",
     "inventory": "node src/cli.mjs inventory",
+    "check": "node scripts/check.mjs",
     "test": "node --test",
     "eval": "node src/cli.mjs eval"
   },
   "engines": {
     "node": ">=22.0.0"
-  }
+  },
+  "license": "MIT"
 }

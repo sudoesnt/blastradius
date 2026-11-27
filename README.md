@@ -1,5 +1,7 @@
 # BlastRadius
 
+[![CI](https://github.com/sudoesnt/blastradius/actions/workflows/ci.yml/badge.svg)](https://github.com/sudoesnt/blastradius/actions/workflows/ci.yml)
+
 A short, role-tailored digest of the week's breaches and exploited vulnerabilities. For each incident it answers three questions:
 
 1. **How did they get in?** One sentence, labelled as *stated by source*, *inferred*, or *not disclosed*.
@@ -27,6 +29,7 @@ Requires Node.js 22 or later. No npm dependencies.
 npm run digest            # 7-day digest (also digest:48h, digest:24h)
 npm start                 # dashboard at http://127.0.0.1:3377
 npm run sources           # per-feed coverage, without storing anything
+npm run check             # deterministic repo checks (syntax, config, eval labels, no secrets)
 npm test                  # unit and server tests
 npm run eval              # score root-cause calls against eval/cases.json
 ```
@@ -81,6 +84,12 @@ Analyses are cached per incident in `data/analysis-cache.json`. An incident whos
 
 Known limits: the model can still be wrong or be misled by a source; "inferred" causes are opinions; relevance without an inventory match is a judgement about your stated stack.
 
+## Checks before merge
+
+Every pull request runs `npm run check` and `npm test` on Node 22 and 24 (Linux) and Node 24 (Windows). Both are deterministic: no network and no model. `main` only accepts changes through a pull request with those checks green.
+
+The eval (`npm run eval`) calls a model, so it is run by hand when the prompt or validation changes and its result is committed to `eval/RESULTS.md`.
+
 ## Layout
 
 ```
@@ -92,4 +101,9 @@ src/llm.mjs        model engines (locked-down claude CLI, HTTP APIs)
 src/inventory.mjs  manifest scan and advisory lookup
 src/server.mjs     local dashboard API
 src/eval.mjs       scoring against eval/cases.json
+scripts/check.mjs  deterministic repository checks run by CI
 ```
+
+## License
+
+MIT. See `LICENSE`.
