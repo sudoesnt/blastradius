@@ -86,9 +86,17 @@ Known limits: the model can still be wrong or be misled by a source; "inferred" 
 
 ## Checks before merge
 
-Every pull request runs `npm run check` and `npm test` on Node 22 and 24 (Linux) and Node 24 (Windows). Both are deterministic: no network and no model. `main` only accepts changes through a pull request with those checks green.
+`main` is protected: it only accepts commits that have already passed CI, force-pushes are blocked, and history is linear. Changes go through a pull request, which runs on Node 22 and 24 (Linux) and Node 24 (Windows):
 
-The eval (`npm run eval`) calls a model, so it is run by hand when the prompt or validation changes and its result is committed to `eval/RESULTS.md`.
+1. **`npm run check`** — static rules, no network, no model:
+   - every script parses, config files are consistent, eval labels match the analyzer;
+   - no npm dependencies, no tracked local data, nothing shaped like a secret;
+   - **architecture boundaries**: each module may import only the layers below it, and four capabilities are confined to one place each (starting a process and calling a model in `src/llm.mjs`, network requests in `src/ingest.mjs`, file writes in `src/store.mjs`, HTTP serving in `src/server.mjs`). Each rule came from a real review finding, and its error message says what to do instead.
+2. **`npm test`** — unit tests, server request checks, and an **offline end-to-end run**: fixture feeds go through collection, clustering, analysis (with a stub model that is deliberately wrong in two ways), the digest, the Markdown export and the dashboard render. It asserts properties that must hold for any digest (verdict counts add up, a stated cause always carries a quote found in its source, an uninstalled package is never Act Now, a second run changes nothing) rather than one expected output.
+
+CI publishes the digest that end-to-end run produced as the run summary and as an artifact, so a reviewer can read what a change does to the output instead of inferring it from the diff.
+
+The eval (`npm run eval`) calls a real model, so it is not a merge gate. It is run by hand when the prompt or validation changes and its result is committed to `eval/RESULTS.md`.
 
 ## Layout
 

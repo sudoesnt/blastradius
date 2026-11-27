@@ -34,7 +34,28 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
-      - name: Repository checks (syntax, config, eval labels, no secrets or dependencies)
+      - name: Repository checks (syntax, config, boundaries, eval labels, no secrets or dependencies)
         run: node scripts/check.mjs
-      - name: Unit and server tests
+      - name: Unit, server and end-to-end tests
         run: node --test
+        env:
+          BLASTRADIUS_E2E_OUT: ${{ runner.temp }}/e2e
+      # The end-to-end test runs the whole pipeline offline on fixture feeds. Its output is published so a
+      # reviewer can read the digest this change produces, not just the diff.
+      - name: Publish the digest produced by the end-to-end run
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.node == 24
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/e2e/digest.md" ]; then
+            { echo "## Digest produced by this change (offline fixtures, stub model)"; echo; sed "1,/^---$/{/^---$/!d}" "$RUNNER_TEMP/e2e/digest.md" | sed "/^---$/,/^---$/d"; } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "The end-to-end run did not produce a digest." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload digest artifact
+        if: always() && matrix.os == 'ubuntu-latest' && matrix.node == 24
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-digest
+          path: ${{ runner.temp }}/e2e/
+          if-no-files-found: warn
+          retention-days: 14
