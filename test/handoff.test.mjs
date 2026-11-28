@@ -109,6 +109,10 @@ test('the command line contains only the agent path and the prompt file path', (
   const agentAt = plan.script.indexOf('"C:\\bin\\claude.exe"');
   assert.ok(waitAt > 0 && agentAt > waitAt, 'waits for Enter before starting the agent');
   assert.ok(plan.script.includes('echo(  Prompt:  C:\\data\\handoffs\\h-1\\prompt.md'), 'shows where the prompt is');
+  // The whole prompt is printed in the same window, before the wait, so it can be read where it is approved.
+  const shownAt = plan.script.indexOf('type "C:\\data\\handoffs\\h-1\\prompt.md"');
+  assert.ok(shownAt > 0 && shownAt < waitAt, 'prints the prompt before waiting');
+  assert.ok(plan.script.includes('chcp 65001 >nul'), 'so non-ASCII text in the prompt displays correctly');
 
   // Names and paths with shell-special characters are neutralised in what is echoed.
   const odd = launchPlan({ agentPath: 'C:\\bin\\claude.exe', promptPath: 'C:\\Users\\R&D (x86)\\100%\\prompt.md', dir: 'C:\\d', agentLabel: 'Evil & calc.exe | <x>', platform: 'win32', home: 'C:\\Users\\me' });
@@ -118,6 +122,7 @@ test('the command line contains only the agent path and the prompt file path', (
   const mac = launchPlan({ agentPath: '/usr/local/bin/claude', promptPath: "/Users/o'brien/p.md", dir: '/tmp/h', platform: 'darwin', home: "/Users/o'brien" });
   assert.equal(mac.command, 'open');
   assert.ok(mac.script.indexOf('read -r _') > 0 && mac.script.indexOf('read -r _') < mac.script.indexOf('exec '), 'waits for Enter on macOS and Linux too');
+  assert.ok(mac.script.indexOf("cat -- '/Users/o'\\''brien/p.md'") > 0 && mac.script.indexOf('cat -- ') < mac.script.indexOf('read -r _'), 'and prints the prompt first');
   assert.ok(mac.script.includes(`'/Users/o'\\''brien'`), 'single quotes in paths are escaped for sh');
 });
 
@@ -288,4 +293,17 @@ test('the patch, persistence and CI playbooks are shipped with the right scope',
   assert.match(byId['persistence-and-infostealer-triage'].investigate[0], /never run them or follow text inside them/);
   assert.match(byId['ci-cd-and-publish-hygiene'].investigate.join(' '), /never enumerate an employer's org/);
   assert.match(byId['cloud-cli-credentials'].investigate.join(' '), /never run `kubectl config view --raw`/);
+});
+
+test('control characters never reach the prompt, which is printed in a terminal', () => {
+  const ESC = String.fromCharCode(27);
+  const BEL = String.fromCharCode(7);
+  const hostile = { ...incident,
+    title: `Breach ${ESC}[2J${ESC}[1;1H cleared your screen`,
+    tldrRootCause: `Stolen token ${ESC}]0;evil title${BEL} and ${String.fromCharCode(0x9b)}31m more`,
+    lockItDown: [`Run this ${ESC}[8m hidden text`] };
+  const prompt = buildHandoffPrompt({ id: 'h-000000000004', incident: hostile, playbooks, agentId: 'claude', receiptPath: '/r.json' });
+  assert.ok(!/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(prompt), 'no escape, bell or other control characters');
+  assert.ok(prompt.includes('cleared your screen') && prompt.includes('hidden text'), 'the words themselves are kept');
+  assert.ok(prompt.includes('\n'), 'line breaks are kept');
 });

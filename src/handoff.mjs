@@ -38,7 +38,10 @@ export async function listAgents() {
   })));
 }
 
-const oneLine = (s, max = 400) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+// Control characters are dropped as well as whitespace collapsed: this text is later printed in a terminal, and a
+// terminal obeys escape codes (clear the screen, rewrite earlier lines, change the window title).
+const CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/g;
+const oneLine = (s, max = 400) => String(s ?? '').replace(CONTROL, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 const bullets = (list) => list.map((s) => `- ${oneLine(s, 900)}`).join('\n');
 const numbered = (list) => list.map((s, i) => `${i + 1}. ${oneLine(s, 900)}`).join('\n');
 
@@ -131,7 +134,7 @@ The person reads this on a small card in a dashboard, between other things. Writ
 }
 
 Use "clean" if nothing needed attention, "findings" if something did and is not fixed yet, "fixed" if everything you found was fixed with the person's approval, and "needs-you" if what remains can only be done by the person.
-` : ''}`;
+` : ''}`.replace(CONTROL, '');
 }
 
 
@@ -261,14 +264,22 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
   // The terminal opens ready and waits. Nothing is sent to the agent until the person presses Enter in that window,
   // so a click in a web page can never start an agent on its own. The text shown is fixed wording and paths only.
   const label = String(agentLabel).replace(/[^A-Za-z0-9 ._-]/g, '');
-  const lines = [
+  const rule = '  ' + '-'.repeat(76);
+  const before = [
     '',
     '  BlastRadius handoff, ready to start',
     '',
     `  Agent:   ${label}`,
     `  Prompt:  ${promptPath}`,
     '',
-    '  Open the prompt file if you want to read it first.',
+    `  This is exactly what ${label} will be asked to do:`,
+    rule,
+    ''
+  ];
+  const after = [
+    '',
+    rule,
+    '  That is the whole prompt. Scroll up to read it from the top.',
     '  The agent looks first and asks before it changes anything.',
     ''
   ];
@@ -282,7 +293,11 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
       '@echo off',
       'title BlastRadius handoff',
       `cd /d ${q(home)}`,
-      ...lines.map((l) => `echo(${esc(l)}`),
+      'chcp 65001 >nul',
+      ...before.map((l) => `echo(${esc(l)}`),
+      // `type` prints the file as text; cmd does not interpret what is in it.
+      `type ${q(promptPath)}`,
+      ...after.map((l) => `echo(${esc(l)}`),
       `set /p "_=${waitText.replace(/%/g, '%%')}"`,
       `${q(agentPath)} ${q(ask)}`,
       ''
@@ -297,7 +312,9 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
   const script = [
     '#!/bin/sh',
     `cd ${sq(home)}`,
-    ...lines.map((l) => `printf '%s\\n' ${sq(l)}`),
+    ...before.map((l) => `printf '%s\\n' ${sq(l)}`),
+    `cat -- ${sq(promptPath)}`,
+    ...after.map((l) => `printf '%s\\n' ${sq(l)}`),
     `printf '%s' ${sq(waitText)}`,
     'read -r _',
     `exec ${sq(agentPath)} ${sq(ask)}`,
