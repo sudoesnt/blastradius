@@ -138,6 +138,31 @@ Use "clean" if nothing needed attention, "findings" if something did and is not 
 }
 
 
+/**
+ * The short version of a handoff, for the person about to approve it: why, what the agent will do, what it will not.
+ * Shown in the terminal right above "Press Enter". Built from the same playbooks as the prompt, so it cannot drift.
+ */
+export function buildHandoffSummary({ incident, playbooks, agentLabel = 'your agent' }) {
+  const chosen = (incident.playbooks || []).map((pid) => playbooks.find((p) => p.id === pid)).filter(Boolean);
+  const steps = chosen.reduce((n, p) => n + p.investigate.length, 0);
+  const pages = chosen.reduce((n, p) => n + (p.humanSteps || []).length, 0);
+  const fixes = chosen.reduce((n, p) => n + (p.fixes || []).length, 0);
+  const row = (k, v) => `  ${`${k}:`.padEnd(10)}${v}`;
+  const lines = [
+    '  TL;DR',
+    row('Why', oneLine(incident.title, 100)),
+    ...(chosen.length
+      ? chosen.map((p, i) => row(i ? '' : 'Checks', `${oneLine(p.title, 90)} (${p.investigate.length} steps)`).replace(/^ {2}: {9}/, '            '))
+      : [row('Checks', 'No reviewed playbook fits; it works through the digest\'s suggested checks.')]),
+    row('Reads', steps ? `${steps} read-only steps on this machine, using logins you already have.` : 'Read-only, on this machine, using logins you already have.'),
+    row('Changes', fixes ? 'Nothing unless you say yes to a specific fix it proposes.' : 'Nothing. It only reports.'),
+    row('Secrets', 'It reports where a secret is, never its value.'),
+    ...(pages ? [row('You', `${pages} step${pages === 1 ? ' is' : 's are'} yours to do; it will walk you through ${pages === 1 ? 'it' : 'them'}.`)] : []),
+    row('After', `${oneLine(agentLabel, 40)} writes a short receipt and the dashboard shows the result.`)
+  ];
+  return `${lines.join('\n')}\n`.replace(CONTROL, '');
+}
+
 /** The stand-in "incident" for running one playbook on demand, with no news story behind it. */
 export function checkupIncident(playbook) {
   return {
@@ -259,7 +284,7 @@ export async function listHandoffs() {
  * it: only fixed wording, the agent's own path and name, and the path of the prompt file we wrote. It waits for Enter
  * before starting the agent.
  */
-export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agent', platform = process.platform, home = os.homedir() }) {
+export function launchPlan({ agentPath, promptPath, summaryPath = null, dir, agentLabel = 'your agent', platform = process.platform, home = os.homedir() }) {
   const ask = `Read the file ${promptPath} and follow the instructions in it.`;
   // The terminal opens ready and waits. Nothing is sent to the agent until the person presses Enter in that window,
   // so a click in a web page can never start an agent on its own. The text shown is fixed wording and paths only.
@@ -280,9 +305,10 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
     '',
     rule,
     '  That is the whole prompt. Scroll up to read it from the top.',
-    '  The agent looks first and asks before it changes anything.',
     ''
   ];
+  // The short version goes last, so it is what is on screen next to "Press Enter" without scrolling.
+  const closing = [''];
   const waitText = '  Press Enter to start, or close this window to cancel. ';
 
   if (platform === 'win32') {
@@ -298,6 +324,8 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
       // `type` prints the file as text; cmd does not interpret what is in it.
       `type ${q(promptPath)}`,
       ...after.map((l) => `echo(${esc(l)}`),
+      ...(summaryPath ? [`type ${q(summaryPath)}`] : ['echo(  The agent looks first and asks before it changes anything.']),
+      ...closing.map((l) => `echo(${esc(l)}`),
       `set /p "_=${waitText.replace(/%/g, '%%')}"`,
       `${q(agentPath)} ${q(ask)}`,
       ''
@@ -315,6 +343,8 @@ export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agen
     ...before.map((l) => `printf '%s\\n' ${sq(l)}`),
     `cat -- ${sq(promptPath)}`,
     ...after.map((l) => `printf '%s\\n' ${sq(l)}`),
+    summaryPath ? `cat -- ${sq(summaryPath)}` : `printf '%s\\n' '  The agent looks first and asks before it changes anything.'`,
+    ...closing.map((l) => `printf '%s\\n' ${sq(l)}`),
     `printf '%s' ${sq(waitText)}`,
     'read -r _',
     `exec ${sq(agentPath)} ${sq(ask)}`,
@@ -341,14 +371,15 @@ export async function createHandoff({ incident, playbooks, agentId, launch = fal
     id, incidentId: incident.id, incidentTitle: incident.title, agent: agent.id, agentLabel: agent.label,
     playbooks: incident.playbooks || [], createdAt: now.toISOString(), launched: false
   };
-  const dir = await saveHandoffFiles(id, { 'prompt.md': prompt, 'handoff.json': JSON.stringify(meta, null, 2) });
+  const summary = buildHandoffSummary({ incident, playbooks, agentLabel: agent.label });
+  const dir = await saveHandoffFiles(id, { 'prompt.md': prompt, 'summary.txt': summary, 'handoff.json': JSON.stringify(meta, null, 2) });
   const promptPath = path.join(dir, 'prompt.md');
 
   let launchError = null;
   const agentPath = launch && agent.bin ? await findOnPath(agent.bin) : null;
   if (launch && agentPath) {
     try {
-      const plan = launchPlan({ agentPath, promptPath, dir, agentLabel: agent.label });
+      const plan = launchPlan({ agentPath, promptPath, summaryPath: path.join(dir, 'summary.txt'), dir, agentLabel: agent.label });
       await saveHandoffFiles(id, { [plan.scriptName]: plan.script }, [plan.scriptName]);
       const child = spawnFn(plan.command, plan.args, { ...plan.options, detached: true, stdio: 'ignore', windowsHide: false });
       child.on?.('error', () => {});
@@ -362,5 +393,5 @@ export async function createHandoff({ incident, playbooks, agentId, launch = fal
     launchError = agent.bin ? `${agent.label} was not found on this machine's PATH` : `${agent.label} has no command-line launcher`;
   }
 
-  return { id, prompt, promptPath, receiptPath, launched: meta.launched, launchError, agentLabel: agent.label, pasteHint: agent.pasteHint || '' };
+  return { id, prompt, summary, promptPath, receiptPath, launched: meta.launched, launchError, agentLabel: agent.label, pasteHint: agent.pasteHint || '' };
 }
