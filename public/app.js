@@ -1141,7 +1141,7 @@ async function handOff(incidentId, launch) {
       try { await navigator.clipboard.writeText(out.prompt); copied = true; } catch { copied = false; }
     }
     if (out.launched) {
-      state.handoffNotes[incidentId] = `${out.agentLabel} is ready in a new terminal window, showing the full prompt. Press Enter there to start it; nothing runs until you do.`;
+      state.handoffNotes[incidentId] = `${out.agentLabel} is ready in a new terminal window, showing a TL;DR and the full prompt. Press Enter there to start it; nothing runs until you do.`;
     } else if (copied) {
       state.handoffNotes[incidentId] = `Prompt copied. ${out.pasteHint || `Paste it into ${out.agentLabel}.`}${out.launchError ? ` (${out.launchError}.)` : ''}`;
     } else {

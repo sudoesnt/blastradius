@@ -12,7 +12,7 @@ import { once } from 'node:events';
 const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'blastradius-handoff-'));
 process.env.BLASTRADIUS_DATA_DIR = dataDir;
 
-const { buildHandoffPrompt, sanitizeReceipt, launchPlan, createHandoff, listHandoffs, AGENTS } = await import('../src/handoff.mjs');
+const { buildHandoffPrompt, buildHandoffSummary, sanitizeReceipt, launchPlan, createHandoff, listHandoffs, AGENTS } = await import('../src/handoff.mjs');
 const { loadPlaybooks, playbookProblems } = await import('../src/playbooks.mjs');
 const { validateAnalysis } = await import('../src/analyze.mjs');
 const { saveDigest, receiptPathFor, RECEIPTS_DIR } = await import('../src/store.mjs');
@@ -306,4 +306,33 @@ test('control characters never reach the prompt, which is printed in a terminal'
   assert.ok(!/[\u0000-\u0008\u000b-\u001f\u007f-\u009f]/.test(prompt), 'no escape, bell or other control characters');
   assert.ok(prompt.includes('cleared your screen') && prompt.includes('hidden text'), 'the words themselves are kept');
   assert.ok(prompt.includes('\n'), 'line breaks are kept');
+});
+
+test('the TL;DR says why, what, and what will not happen, and sits right above the wait', async () => {
+  const two = { ...incident, playbooks: ['github-tokens', 'secrets-on-disk'] };
+  const summary = buildHandoffSummary({ incident: two, playbooks, agentLabel: 'Claude Code' });
+  assert.match(summary, /^ {2}TL;DR\n/);
+  assert.ok(summary.includes('Acme breached via stolen GitHub token'), 'why: the incident');
+  assert.ok(summary.includes('GitHub tokens and sign-ins on this machine (5 steps)') && summary.includes('API keys and passwords sitting in files (4 steps)'), 'what: each check by name');
+  assert.ok(summary.includes('9 read-only steps'));
+  assert.ok(summary.includes('Nothing unless you say yes to a specific fix'));
+  assert.ok(summary.includes('never its value'));
+  assert.ok(summary.split('\n').every((l) => l.length <= 120), 'short lines that fit a terminal');
+  assert.ok(summary.split('\n').length <= 12, 'short enough to see at a glance');
+
+  const none = buildHandoffSummary({ incident: { ...incident, playbooks: [] }, playbooks, agentLabel: 'Codex' });
+  assert.ok(none.includes('No reviewed playbook fits'));
+
+  const ESC = String.fromCharCode(27);
+  assert.ok(!buildHandoffSummary({ incident: { ...two, title: `Bad ${ESC}[2J title` }, playbooks }).includes(ESC), 'no control characters here either');
+
+  // On screen: prompt, then the TL;DR, then the wait. Both are printed from files, never written into the script.
+  const plan = launchPlan({ agentPath: 'C:\\bin\\claude.exe', promptPath: 'C:\\d\\prompt.md', summaryPath: 'C:\\d\\summary.txt', dir: 'C:\\d', platform: 'win32', home: 'C:\\Users\\me' });
+  const at = (s) => plan.script.indexOf(s);
+  assert.ok(at('type "C:\\d\\prompt.md"') > 0 && at('type "C:\\d\\prompt.md"') < at('type "C:\\d\\summary.txt"') && at('type "C:\\d\\summary.txt"') < at('set /p'));
+  assert.ok(!plan.script.includes('Acme'), 'still no incident text in the script itself');
+
+  const spawned = [];
+  const out = await createHandoff({ incident: two, playbooks, agentId: 'antigravity', launch: false, spawnFn: (...a) => spawned.push(a) });
+  assert.equal(await fs.readFile(path.join(path.dirname(out.promptPath), 'summary.txt'), 'utf8'), out.summary);
 });
