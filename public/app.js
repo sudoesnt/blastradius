@@ -820,7 +820,7 @@ function renderTurn(key, t, done) {
 function receiptLine(h) {
   const who = esc(h.agentLabel || 'your agent');
   if (!h.receipt) {
-    return `<div class="receipt receipt-waiting"><span class="spinner"></span> ${h.launched ? `${who} is working on this` : `Prompt made for ${who}`} (${esc(fmtRelative(h.createdAt))}). The result will appear here.</div>`;
+    return `<div class="receipt receipt-waiting"><span class="spinner"></span> ${h.launched ? `Handed to ${who}` : `Prompt made for ${who}`} (${esc(fmtRelative(h.createdAt))}). ${h.launched ? 'Press Enter in its terminal window if you have not yet. ' : ''}The result will appear here.</div>`;
   }
   const r = h.receipt;
   const turns = r.yourTurn.map((t, i) => ({ t, key: turnKey(h.id, i), done: Boolean(state.checkedActions[turnKey(h.id, i)]) }));
@@ -963,7 +963,7 @@ function renderHandoffRow(inc) {
   const books = (inc.playbooks || []).length;
   const note = state.handoffNotes[inc.id];
   const tip = agent.canLaunch
-    ? `Opens ${agent.label} in a terminal on this machine. It checks first and asks before changing anything.`
+    ? `Opens a terminal with ${agent.label} ready to go. Nothing runs until you press Enter there.`
     : `${agent.label} has no launcher on this machine, so the prompt is copied for you to paste.`;
   return `<div class="tldr-row">
       <span class="tldr-k">Agent</span>
@@ -1141,7 +1141,7 @@ async function handOff(incidentId, launch) {
       try { await navigator.clipboard.writeText(out.prompt); copied = true; } catch { copied = false; }
     }
     if (out.launched) {
-      state.handoffNotes[incidentId] = `${out.agentLabel} is open in a new terminal window. It checks first and asks you before changing anything.`;
+      state.handoffNotes[incidentId] = `${out.agentLabel} is ready in a new terminal window. Press Enter there to start it; nothing runs until you do.`;
     } else if (copied) {
       state.handoffNotes[incidentId] = `Prompt copied. ${out.pasteHint || `Paste it into ${out.agentLabel}.`}${out.launchError ? ` (${out.launchError}.)` : ''}`;
     } else {

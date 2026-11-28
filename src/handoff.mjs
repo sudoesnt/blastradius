@@ -252,14 +252,41 @@ export async function listHandoffs() {
 }
 
 /**
- * The command line that opens a terminal running the agent. Nothing from a feed, a model or the browser is in it:
- * only the agent's own path and the path of the prompt file we wrote.
+ * The script that opens a terminal with the agent ready to start. Nothing from a feed, a model or the browser is in
+ * it: only fixed wording, the agent's own path and name, and the path of the prompt file we wrote. It waits for Enter
+ * before starting the agent.
  */
-export function launchPlan({ agentPath, promptPath, dir, platform = process.platform, home = os.homedir() }) {
+export function launchPlan({ agentPath, promptPath, dir, agentLabel = 'your agent', platform = process.platform, home = os.homedir() }) {
   const ask = `Read the file ${promptPath} and follow the instructions in it.`;
+  // The terminal opens ready and waits. Nothing is sent to the agent until the person presses Enter in that window,
+  // so a click in a web page can never start an agent on its own. The text shown is fixed wording and paths only.
+  const label = String(agentLabel).replace(/[^A-Za-z0-9 ._-]/g, '');
+  const lines = [
+    '',
+    '  BlastRadius handoff, ready to start',
+    '',
+    `  Agent:   ${label}`,
+    `  Prompt:  ${promptPath}`,
+    '',
+    '  Open the prompt file if you want to read it first.',
+    '  The agent looks first and asks before it changes anything.',
+    ''
+  ];
+  const waitText = '  Press Enter to start, or close this window to cancel. ';
+
   if (platform === 'win32') {
     const q = (s) => `"${String(s).replace(/%/g, '%%')}"`;
-    const script = ['@echo off', 'title BlastRadius handoff', `cd /d ${q(home)}`, `${q(agentPath)} ${q(ask)}`, ''].join('\r\n');
+    // `echo(` prints a line safely, including an empty one. Paths can contain characters cmd treats specially.
+    const esc = (s) => String(s).replace(/%/g, '%%').replace(/([&|<>^()])/g, '^$1');
+    const script = [
+      '@echo off',
+      'title BlastRadius handoff',
+      `cd /d ${q(home)}`,
+      ...lines.map((l) => `echo(${esc(l)}`),
+      `set /p "_=${waitText.replace(/%/g, '%%')}"`,
+      `${q(agentPath)} ${q(ask)}`,
+      ''
+    ].join('\r\n');
     const scriptPath = path.join(dir, 'run.cmd');
     return {
       scriptName: 'run.cmd', script,
@@ -267,7 +294,15 @@ export function launchPlan({ agentPath, promptPath, dir, platform = process.plat
     };
   }
   const sq = (s) => `'${String(s).replace(/'/g, `'\\''`)}'`;
-  const script = ['#!/bin/sh', `cd ${sq(home)}`, `exec ${sq(agentPath)} ${sq(ask)}`, ''].join('\n');
+  const script = [
+    '#!/bin/sh',
+    `cd ${sq(home)}`,
+    ...lines.map((l) => `printf '%s\\n' ${sq(l)}`),
+    `printf '%s' ${sq(waitText)}`,
+    'read -r _',
+    `exec ${sq(agentPath)} ${sq(ask)}`,
+    ''
+  ].join('\n');
   const scriptPath = path.join(dir, 'run.command');
   return platform === 'darwin'
     ? { scriptName: 'run.command', script, command: 'open', args: [scriptPath], options: {} }
@@ -275,8 +310,8 @@ export function launchPlan({ agentPath, promptPath, dir, platform = process.plat
 }
 
 /**
- * Create a handoff for one incident: write the prompt, and if asked and possible, open the agent in a visible terminal.
- * The agent starts in its normal permission mode, so the person sees and approves what it runs.
+ * Create a handoff for one incident: write the prompt, and if asked and possible, open a terminal with the agent ready.
+ * The agent does not start until the person presses Enter there, and then runs in its normal ask-first mode.
  */
 export async function createHandoff({ incident, playbooks, agentId, launch = false, spawnFn = spawn, now = new Date() }) {
   const agent = AGENTS.find((a) => a.id === agentId);
@@ -296,7 +331,7 @@ export async function createHandoff({ incident, playbooks, agentId, launch = fal
   const agentPath = launch && agent.bin ? await findOnPath(agent.bin) : null;
   if (launch && agentPath) {
     try {
-      const plan = launchPlan({ agentPath, promptPath, dir });
+      const plan = launchPlan({ agentPath, promptPath, dir, agentLabel: agent.label });
       await saveHandoffFiles(id, { [plan.scriptName]: plan.script }, [plan.scriptName]);
       const child = spawnFn(plan.command, plan.args, { ...plan.options, detached: true, stdio: 'ignore', windowsHide: false });
       child.on?.('error', () => {});
