@@ -31,6 +31,17 @@ Every incident you might act on has a **Give this to ...** button. It gives the 
 
 What "local" means here: BlastRadius sends nothing anywhere for a handoff. Your agent talks to its own model provider as it always does, so what it reads while checking (file paths, repository names) goes there under that agent's own terms. The prompt tells it never to print or store secret values. Use an agent backed by a local model if you want nothing to leave the machine at all.
 
+## Trying it with test findings
+
+Most weeks nothing is Act Now, which makes that part of the dashboard hard to try. Three labelled test incidents can be added to your local digest:
+
+```bash
+npm run findings:add      # three [TEST] Act Now items, each matched to real playbooks
+npm run findings:remove   # take them out again
+```
+
+They are marked `[TEST]`, say plainly that nothing happened, and cite no real source. Handing one to your agent runs the real playbook checks on your machine, which is the point. They exist only in your local data folder, disappear on the next refresh, and the demo build refuses a digest that contains them.
+
 ## What you can and cannot trust
 
 BlastRadius reads feed headlines and teasers, not full articles. It is built so that this limit is visible rather than hidden:
