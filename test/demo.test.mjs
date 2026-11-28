@@ -154,3 +154,28 @@ test('in the demo the agent button copies the prompt and sends nothing', async (
   const made = globalThis.__demoRequests.slice(before);
   assert.ok(made.every(([method, u]) => method === 'GET' && !u.includes('/api/')), 'only static files were read');
 });
+
+test('test findings can be added and removed cleanly, and can never be published', async () => {
+  const { withTestFindings, withoutTestFindings } = await import('../scripts/sample-findings.mjs');
+  const added = withTestFindings(digest, '2026-11-27T12:00:00.000Z');
+  assert.equal(added.incidents.length, digest.incidents.length + 3);
+  assert.equal(added.stats.actNow, digest.stats.actNow + 3);
+  assert.ok(added.incidents.slice(0, 3).every((i) => i.isTest && i.verdict === 'ACT_NOW' && i.title.startsWith('[TEST]') && i.playbooks.length));
+  assert.ok(added.incidents.slice(0, 3).every((i) => /nothing happened/.test(i.tldrRootCause) && i.rootCauseBasis !== 'DISCLOSED'), 'they never claim a source said anything');
+  assert.equal(added.topLockdownChecklist.length, digest.topLockdownChecklist.length + 6);
+
+  // Adding twice does not double up, and removing restores the original.
+  assert.equal(withTestFindings(added).incidents.length, digest.incidents.length + 3);
+  const removed = withoutTestFindings(added);
+  assert.deepEqual(removed.incidents, digest.incidents);
+  assert.deepEqual(removed.topLockdownChecklist, digest.topLockdownChecklist);
+  assert.equal(removed.stats.actNow, digest.stats.actNow);
+  assert.equal(removed.testFindings, undefined);
+
+  // A public page must never carry them.
+  assert.ok(publishProblems(added, defaultProfile).some((p) => /test findings/.test(p)));
+  const dir = path.join(tmp, 'with-tests');
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(path.join(dir, 'digest-168h.json'), JSON.stringify(added));
+  await assert.rejects(buildDemo(path.join(tmp, 'with-tests-out'), { demoDir: dir }), /test findings/);
+});

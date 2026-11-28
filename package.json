@@ -18,7 +18,9 @@
     "test": "node --test",
     "eval": "node src/cli.mjs eval",
     "demo:snapshot": "node scripts/demo-snapshot.mjs",
-    "demo:build": "node scripts/build-demo.mjs"
+    "demo:build": "node scripts/build-demo.mjs",
+    "findings:add": "node scripts/sample-findings.mjs add",
+    "findings:remove": "node scripts/sample-findings.mjs remove"
   },
   "engines": {
     "node": ">=22.0.0"

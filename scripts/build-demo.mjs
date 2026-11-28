@@ -22,6 +22,7 @@ export function publishProblems(digest, defaultProfile) {
     problems.push(`built for "${digest.roleTitle}", not the generic default profile; regenerate with \`npm run demo:snapshot\``);
   }
   if (digest.inventory) problems.push('contains an inventory summary');
+  if (digest.testFindings || (digest.incidents || []).some((i) => i.isTest)) problems.push('contains test findings, which would look like real incidents on a public page');
   if ((digest.incidents || []).some((i) => i.inventory?.checked)) problems.push('contains inventory lookups from a real machine');
   return problems;
 }
