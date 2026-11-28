@@ -5,6 +5,9 @@ import path from 'node:path';
 import { ROOT_DIR } from './store.mjs';
 
 const ID = /^[a-z0-9-]{3,40}$/;
+// The handoff prompt keeps at most this many characters of a step (see oneLine in handoff.mjs). A longer step would
+// lose its ending without anyone noticing, and the ending is often the caveat.
+export const MAX_STEP_CHARS = 900;
 const strings = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string' && s.trim());
 
 /** Returns a list of problems with a playbooks config object; empty means valid. Used at load time and by the repo checks. */
@@ -20,6 +23,14 @@ export function playbookProblems(config) {
     for (const k of ['title', 'when']) if (typeof p[k] !== 'string' || !p[k].trim()) problems.push(`${where}: missing ${k}`);
     if (!strings(p.investigate) || !p.investigate.length) problems.push(`${where}: investigate must be a non-empty list of steps`);
     for (const k of ['humanSteps', 'fixes', 'needs']) if (!strings(p[k] || [])) problems.push(`${where}: ${k} must be a list of strings`);
+    for (const k of ['investigate', 'humanSteps', 'fixes']) {
+      (Array.isArray(p[k]) ? p[k] : []).forEach((step, n) => {
+        if (typeof step === 'string' && step.length > MAX_STEP_CHARS) {
+          problems.push(`${where}: ${k} step ${n + 1} is ${step.length} characters; the handoff prompt cuts steps at ${MAX_STEP_CHARS}, so split it into two steps`);
+        }
+      });
+    }
+    if ('needsIncident' in p && typeof p.needsIncident !== 'boolean') problems.push(`${where}: needsIncident must be true or false`);
   }
   return problems;
 }

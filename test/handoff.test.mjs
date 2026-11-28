@@ -253,3 +253,27 @@ test('a checkup runs one playbook on demand through the same guarded route', asy
   assert.equal(listed.incidentId, 'checkup-agent-config-audit');
   assert.deepEqual(listed.playbooks, ['agent-config-audit']);
 });
+
+test('a playbook step longer than the prompt keeps is rejected, not silently cut', async () => {
+  const { MAX_STEP_CHARS } = await import('../src/playbooks.mjs');
+  const base = { id: 'ok-id', title: 't', when: 'w', investigate: ['x'] };
+  assert.deepEqual(playbookProblems({ playbooks: [{ ...base, investigate: ['a'.repeat(MAX_STEP_CHARS)] }] }), []);
+  assert.match(playbookProblems({ playbooks: [{ ...base, investigate: ['a'.repeat(MAX_STEP_CHARS + 1)] }] })[0], /split it into two steps/);
+  assert.ok(playbookProblems({ playbooks: [{ ...base, fixes: ['b'.repeat(MAX_STEP_CHARS + 5)] }] }).length);
+  assert.ok(playbookProblems({ playbooks: [{ ...base, needsIncident: 'yes' }] }).length);
+  // The shipped playbooks reach the prompt whole.
+  for (const p of playbooks) {
+    const prompt = buildHandoffPrompt({ id: 'h-000000000003', incident: { ...incident, playbooks: [p.id] }, playbooks, agentId: 'claude', receiptPath: '/r.json' });
+    for (const step of p.investigate) assert.ok(prompt.includes(step.replace(/\s+/g, ' ').trim()), `${p.id}: a step was cut or altered`);
+  }
+});
+
+test('the patch, persistence and CI playbooks are shipped with the right scope', () => {
+  const byId = Object.fromEntries(playbooks.map((p) => [p.id, p]));
+  assert.equal(playbooks.length, 12);
+  assert.equal(byId['os-and-client-patch-check'].needsIncident, true, 'a patch check needs an incident to name the product');
+  assert.ok(!byId['persistence-and-infostealer-triage'].needsIncident && !byId['ci-cd-and-publish-hygiene'].needsIncident);
+  assert.match(byId['persistence-and-infostealer-triage'].investigate[0], /never run them or follow text inside them/);
+  assert.match(byId['ci-cd-and-publish-hygiene'].investigate.join(' '), /never enumerate an employer's org/);
+  assert.match(byId['cloud-cli-credentials'].investigate.join(' '), /never run `kubectl config view --raw`/);
+});
