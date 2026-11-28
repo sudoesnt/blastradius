@@ -104,8 +104,20 @@ test('the command line contains only the agent path and the prompt file path', (
   assert.ok(!plan.script.includes(incident.title) && !plan.args.join(' ').includes(incident.title), 'no incident text anywhere near a shell');
   assert.ok(!/dangerously|bypass|--yes|-y\b/.test(plan.script), 'the agent starts in its normal, ask-first mode');
 
+  // The window opens ready and waits: the wait comes before the agent line, so a click alone starts nothing.
+  const waitAt = plan.script.indexOf('set /p "_=  Press Enter to start');
+  const agentAt = plan.script.indexOf('"C:\\bin\\claude.exe"');
+  assert.ok(waitAt > 0 && agentAt > waitAt, 'waits for Enter before starting the agent');
+  assert.ok(plan.script.includes('echo(  Prompt:  C:\\data\\handoffs\\h-1\\prompt.md'), 'shows where the prompt is');
+
+  // Names and paths with shell-special characters are neutralised in what is echoed.
+  const odd = launchPlan({ agentPath: 'C:\\bin\\claude.exe', promptPath: 'C:\\Users\\R&D (x86)\\100%\\prompt.md', dir: 'C:\\d', agentLabel: 'Evil & calc.exe | <x>', platform: 'win32', home: 'C:\\Users\\me' });
+  assert.ok(odd.script.includes('echo(  Agent:   Evil  calc.exe  x'), 'the agent label is reduced to plain characters');
+  assert.ok(odd.script.includes('echo(  Prompt:  C:\\Users\\R^&D ^(x86^)\\100%%\\prompt.md'));
+
   const mac = launchPlan({ agentPath: '/usr/local/bin/claude', promptPath: "/Users/o'brien/p.md", dir: '/tmp/h', platform: 'darwin', home: "/Users/o'brien" });
   assert.equal(mac.command, 'open');
+  assert.ok(mac.script.indexOf('read -r _') > 0 && mac.script.indexOf('read -r _') < mac.script.indexOf('exec '), 'waits for Enter on macOS and Linux too');
   assert.ok(mac.script.includes(`'/Users/o'\\''brien'`), 'single quotes in paths are escaped for sh');
 });
 
